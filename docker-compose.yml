@@ -3,7 +3,7 @@ services:
   mysql:
     image: "mysql:8"
     environment:
-      - MYSQL_ROOT_PASSWORD=asdfasdf88
+      - MYSQL_ROOT_PASSWORD=rootasdf88
       - MYSQL_DATABASE=chatapp
       - MYSQL_USER=chatappadmin
       - MYSQL_PASSWORD=asdfasdf88
@@ -18,9 +18,10 @@ services:
       dockerfile: Dockerfile.dev
       context: ./nginx
     ports:
-      - 8001:80
+      - 8010:80
     depends_on:
       - go
+      - client
   client:
     build:
       dockerfile: Dockerfile.dev
@@ -29,6 +30,4 @@ services:
       - /app/node_modules
       - ./client/:/app
     ports:
-      - 8000:8080
-    depends_on:
-      - nginx
+      - 8011:8080
