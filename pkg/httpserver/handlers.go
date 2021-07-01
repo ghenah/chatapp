@@ -42,6 +42,55 @@ func userRegister(c echo.Context) (err error) {
 	return writeResponse(c, ResponseSuccess{Success: true})
 }
 
+// userAuthenticate
+// @Summary Authenticate a user.
+// @Description Check user's login credentials and provide an access token
+// @Description if the registration was successful.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param body body RequestUserAuthenticate true "Body must contain a username and a password"
+// @Success 200 {object} ResponseAuthSuccess
+// @Failure 400
+// @Failure 500
+// @Router /auth/signin [post]
+func userAuthencticate(c echo.Context) (err error) {
+	reqData := &RequestUserRegister{}
+	if err = c.Bind(reqData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// Validate the user login details
+	userPassword, err := ds.GetUserPassword(reqData.Username)
+	if err != nil {
+		if err == idatastore.ErrorUserNotFound {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	err = bcrypt.CompareHashAndPassword(userPassword, []byte(reqData.Password))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid login credentials")
+	} else if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	// Generate the user "session"
+	userInfo, err := ds.GetUser(reqData.Username)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+	accessToken, err := generateUserSession(userInfo.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	return writeResponse(c, ResponseAuthSuccess{
+		User:        userInfo,
+		AccessToken: accessToken,
+	})
+}
+
 // writeResponse writes the response in the format specified in the
 // Accept header; the default format is "application/json".
 // Supported formats:

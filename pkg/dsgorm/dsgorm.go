@@ -1,6 +1,8 @@
 package dsgorm
 
 import (
+	"fmt"
+
 	"github.com/ghenah/chatapp/pkg/idatastore"
 	"gorm.io/gorm"
 )
@@ -31,4 +33,54 @@ func (ds *DataStoreGORM) CreateUser(username, email, password string) error {
 	}
 
 	return nil
+}
+
+// GetUser returns a user corresponding to the provided username and an error.
+func (ds *DataStoreGORM) GetUser(username string) (idatastore.User, error) {
+	userResult := User{}
+	result := ds.db.Where("username = ?", username).Preload("Friends").Preload("Ignored").Find(&userResult)
+	if result.Error != nil {
+		fmt.Println(result.Error)
+		return idatastore.User{}, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return idatastore.User{}, idatastore.ErrorUserNotFound
+	}
+
+	userOut := idatastore.User{
+		ID:       userResult.ID,
+		Username: userResult.Username,
+		Email:    userResult.Email,
+		RegDate:  userResult.RegDate,
+	}
+
+	for _, f := range userResult.Friends {
+		userOut.FriendsList = append(userOut.FriendsList, idatastore.UserShort{
+			ID:       f.ID,
+			Username: f.Username,
+		})
+	}
+
+	for _, f := range userResult.Ignored {
+		userOut.IgnoreList = append(userOut.IgnoreList, idatastore.UserShort{
+			ID:       f.ID,
+			Username: f.Username,
+		})
+	}
+
+	return userOut, nil
+}
+
+// GetUserPassword returns the hashed password of a user and an error
+func (ds *DataStoreGORM) GetUserPassword(username string) ([]byte, error) {
+	userResult := User{}
+	result := ds.db.Where("username = ?", username).Find(&userResult)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, idatastore.ErrorUserNotFound
+	}
+
+	return []byte(userResult.Password), nil
 }
