@@ -1,9 +1,6 @@
-.env
-
-client/node_modules
-
 bin/
 
 .vscode/
 .devcontainer/
+
 Makefile
