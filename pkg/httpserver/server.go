@@ -34,5 +34,8 @@ func StartServer(cfg ServerConfig) {
 }
 
 func setUpRouter() {
+	auth := e.Group("/auth")
+	auth.POST("/signup", userRegister)
+
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 }
