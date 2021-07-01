@@ -55,7 +55,7 @@ func userRegister(c echo.Context) (err error) {
 // @Failure 500
 // @Router /auth/signin [post]
 func userAuthencticate(c echo.Context) (err error) {
-	reqData := &RequestUserRegister{}
+	reqData := &RequestUserAuthenticate{}
 	if err = c.Bind(reqData); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
