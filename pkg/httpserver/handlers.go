@@ -110,6 +110,139 @@ func userSearch(c echo.Context) (err error) {
 	})
 }
 
+// userFriendAdd
+// @Summary Add a new friend to a user's friend list.
+// @Description Adds a new friend to the list of friends of a user.
+// @Tags user
+// @Accept json
+// @Param body body RequestAddUserToList true "Body must contain a user ID and a friend's ID."
+// @Produce json
+// @Success 200 {object} ResponseSuccess
+// @Failure 500
+// @Router /api/v1/users/friends/add [post]
+func userFriendAdd(c echo.Context) (err error) {
+	reqData := &RequestAddUserToList{}
+	if err = c.Bind(reqData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// A user cannot add themselves to the friends list.
+	if reqData.UserID == reqData.FriendID {
+		return writeResponse(c, ResponseSuccess{Success: true})
+	}
+
+	// Make sure the UserID belongs to the authenticated user (the owner of
+	// the JWT)
+	// u := c.Get("user").(*jwt.Token)
+	// claims := u.Claims.(*Claims)
+	// reqData.UserID = claims.UserID
+
+	err = ds.AddFriend(reqData.UserID, reqData.FriendID)
+	if err == idatastore.ErrorUserInIgnoreList {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	} else if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	return writeResponse(c, ResponseSuccess{Success: true})
+}
+
+// userFriendRemove
+// @Summary Remove a friend from the user's friends list.
+// @Description Remove a friend to the list of friends of a user.
+// @Tags user
+// @Accept json
+// @Param body body RequestAddUserToList true "Body must contain a user ID and a friend's ID."
+// @Produce json
+// @Success 200 {object} ResponseSuccess
+// @Failure 500
+// @Router /api/v1/users/friends/delete [post]
+func userFriendRemove(c echo.Context) (err error) {
+	reqData := &RequestAddUserToList{}
+	if err = c.Bind(reqData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// Make sure the UserID belongs to the authenticated user (the owner of
+	// the JWT)
+	// u := c.Get("user").(*jwt.Token)
+	// claims := u.Claims.(*Claims)
+	// reqData.UserID = claims.UserID
+
+	err = ds.RemoveFriend(reqData.UserID, reqData.FriendID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	return writeResponse(c, ResponseSuccess{Success: true})
+}
+
+// userIgnoredAdd
+// @Summary Add a new user to a user's ignore list.
+// @Description Adds a new user to the list of friends of a user. If the user
+// @Description was in the friends list, they are removed from it.
+// @Tags user
+// @Accept json
+// @Param body body RequestAddUserToList true "Body must contain a user ID and an ignored user's ID."
+// @Produce json
+// @Success 200 {object} ResponseSuccess
+// @Failure 500
+// @Router /api/v1/users/ignored/add [post]
+func userIgnoredAdd(c echo.Context) (err error) {
+	reqData := &RequestAddUserToList{}
+	if err = c.Bind(reqData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// A user cannot add themselves to the ignore list.
+	if reqData.UserID == reqData.FriendID {
+		return writeResponse(c, ResponseSuccess{Success: true})
+	}
+
+	// Make sure the UserID belongs to the authenticated user (the owner of
+	// the JWT)
+	// u := c.Get("user").(*jwt.Token)
+	// claims := u.Claims.(*Claims)
+	// reqData.UserID = claims.UserID
+
+	err = ds.AddIgnored(reqData.UserID, reqData.FriendID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	return writeResponse(c, ResponseSuccess{Success: true})
+}
+
+// userIgnoredRemove
+// @Summary Remove a user from the user's ignored list.
+// @Description Remove a user from the ignored list of a user.
+// @Tags user
+// @Accept json
+// @Param body body RequestAddUserToList true "Body must contain a user ID and a friend's ID."
+// @Produce json
+// @Success 200 {object} ResponseSuccess
+// @Failure 500
+// @Router /api/v1/users/friends/delete [post]
+func userIgnoredRemove(c echo.Context) (err error) {
+	reqData := &RequestAddUserToList{}
+	if err = c.Bind(reqData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// Make sure the UserID belongs to the authenticated user (the owner of
+	// the JWT)
+	// u := c.Get("user").(*jwt.Token)
+	// claims := u.Claims.(*Claims)
+	// reqData.UserID = claims.UserID
+
+	err = ds.RemoveIgnored(reqData.UserID, reqData.FriendID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	return writeResponse(c, ResponseSuccess{Success: true})
+}
+
 // writeResponse writes the response in the format specified in the
 // Accept header; the default format is "application/json".
 // Supported formats:

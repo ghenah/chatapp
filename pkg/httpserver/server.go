@@ -40,6 +40,10 @@ func setUpRouter() {
 
 	api := e.Group("/api/v1")
 	api.GET("/users/search", userSearch)
+	api.POST("/users/friends", userFriendAdd)
+	api.DELETE("/users/friends", userFriendRemove)
+	api.POST("/users/ignored", userIgnoredAdd)
+	api.DELETE("/users/ignored", userIgnoredRemove)
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 }

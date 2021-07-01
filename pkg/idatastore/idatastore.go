@@ -14,4 +14,23 @@ type IDataStore interface {
 	// GetAllUsers returns the list of all users within the system. Only the
 	// usernames are provided.
 	GetAllUsers() ([]string, error)
+
+	// AddFriend adds a user to the friends list of the current user. If the
+	// user is in the ignored list, abort the operation. Returns
+	// an error.
+	AddFriend(userID, friendID uint) error
+
+	// RemoveFriend removes a user from friends list of the current user.
+	// Returns an error.
+	RemoveFriend(userID, friendID uint) error
+
+	// AddIgnored adds a user to the ignore list of the current user. Returns
+	// an error. If the ignored user is in the friends list, they are removed
+	// from it.
+	AddIgnored(userID, ignoredID uint) error
+
+	// RemoveIgnored removes a user from friends list of the current user.
+	// Returns an error. Any former "friends" are not re-added back into the
+	// friends list.
+	RemoveIgnored(userID, ignoredID uint) error
 }

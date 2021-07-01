@@ -101,3 +101,72 @@ func (ds *DataStoreGORM) GetAllUsers() ([]string, error) {
 
 	return usersList, nil
 }
+
+// AddFriend adds a user to the friends list of the current user. Returns
+// an error
+func (ds *DataStoreGORM) AddFriend(userID, friendID uint) error {
+	user := User{
+		ID: userID,
+	}
+
+	// If the new friend is present in the ignore list, abort the operation
+	ignoredUsers := []*User{}
+	err := ds.db.Model(&user).Association("Ignored").Find(&ignoredUsers, &User{ID: friendID})
+	if err != nil {
+		return err
+	}
+	if ignoredUsers[0].ID == friendID {
+		return idatastore.ErrorUserInIgnoreList
+	}
+
+	err = ds.db.Model(&user).Association("Friends").Append(&User{ID: friendID})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RemoveFriend removes a user from friends list of the current user.
+// Returns an error.
+func (ds *DataStoreGORM) RemoveFriend(userID, friendID uint) error {
+	user := User{
+		ID: userID,
+	}
+	err := ds.db.Model(&user).Association("Friends").Delete(&User{ID: friendID})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// AddIgnored adds a user to the ignored list of the current user. Returns
+// an error
+func (ds *DataStoreGORM) AddIgnored(userID, friendID uint) error {
+	user := User{
+		ID: userID,
+	}
+
+	ds.db.Model(&user).Association("Friends").Delete(&User{ID: friendID})
+	err := ds.db.Model(&user).Association("Ignored").Append(&User{ID: friendID})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RemoveIgnored removes a user from ignored list of the current user.
+// Returns an error.
+func (ds *DataStoreGORM) RemoveIgnored(userID, friendID uint) error {
+	user := User{
+		ID: userID,
+	}
+	err := ds.db.Model(&user).Association("Ignored").Delete(&User{ID: friendID})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
