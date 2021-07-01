@@ -3,6 +3,7 @@ package httpserver
 import (
 	"net/http"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/ghenah/chatapp/pkg/idatastore"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
@@ -133,9 +134,11 @@ func userFriendAdd(c echo.Context) (err error) {
 
 	// Make sure the UserID belongs to the authenticated user (the owner of
 	// the JWT)
-	// u := c.Get("user").(*jwt.Token)
-	// claims := u.Claims.(*Claims)
-	// reqData.UserID = claims.UserID
+	u := c.Get("user").(*jwt.Token)
+	claims := u.Claims.(*Claims)
+	if reqData.UserID != claims.UserID {
+		return echo.NewHTTPError(http.StatusUnauthorized, "incorrect user details")
+	}
 
 	err = ds.AddFriend(reqData.UserID, reqData.FriendID)
 	if err == idatastore.ErrorUserInIgnoreList {
@@ -165,9 +168,11 @@ func userFriendRemove(c echo.Context) (err error) {
 
 	// Make sure the UserID belongs to the authenticated user (the owner of
 	// the JWT)
-	// u := c.Get("user").(*jwt.Token)
-	// claims := u.Claims.(*Claims)
-	// reqData.UserID = claims.UserID
+	u := c.Get("user").(*jwt.Token)
+	claims := u.Claims.(*Claims)
+	if reqData.UserID != claims.UserID {
+		return echo.NewHTTPError(http.StatusUnauthorized, "incorrect user details")
+	}
 
 	err = ds.RemoveFriend(reqData.UserID, reqData.FriendID)
 	if err != nil {
@@ -201,9 +206,11 @@ func userIgnoredAdd(c echo.Context) (err error) {
 
 	// Make sure the UserID belongs to the authenticated user (the owner of
 	// the JWT)
-	// u := c.Get("user").(*jwt.Token)
-	// claims := u.Claims.(*Claims)
-	// reqData.UserID = claims.UserID
+	u := c.Get("user").(*jwt.Token)
+	claims := u.Claims.(*Claims)
+	if reqData.UserID != claims.UserID {
+		return echo.NewHTTPError(http.StatusUnauthorized, "incorrect user details")
+	}
 
 	err = ds.AddIgnored(reqData.UserID, reqData.FriendID)
 	if err != nil {
@@ -231,9 +238,11 @@ func userIgnoredRemove(c echo.Context) (err error) {
 
 	// Make sure the UserID belongs to the authenticated user (the owner of
 	// the JWT)
-	// u := c.Get("user").(*jwt.Token)
-	// claims := u.Claims.(*Claims)
-	// reqData.UserID = claims.UserID
+	u := c.Get("user").(*jwt.Token)
+	claims := u.Claims.(*Claims)
+	if reqData.UserID != claims.UserID {
+		return echo.NewHTTPError(http.StatusUnauthorized, "incorrect user details")
+	}
 
 	err = ds.RemoveIgnored(reqData.UserID, reqData.FriendID)
 	if err != nil {

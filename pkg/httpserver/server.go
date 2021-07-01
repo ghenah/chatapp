@@ -35,15 +35,25 @@ func StartServer(cfg ServerConfig) {
 
 func setUpRouter() {
 	auth := e.Group("/auth")
+
 	auth.POST("/signup", userRegister)
 	auth.POST("/signin", userAuthencticate)
 
 	api := e.Group("/api/v1")
-	api.GET("/users/search", userSearch)
-	api.POST("/users/friends", userFriendAdd)
-	api.DELETE("/users/friends", userFriendRemove)
-	api.POST("/users/ignored", userIgnoredAdd)
-	api.DELETE("/users/ignored", userIgnoredRemove)
+	protected := api.Group("")
+	protected.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		Claims:      &Claims{},
+		SigningKey:  []byte(getJWTSecret()),
+		TokenLookup: "header:Authorization",
+		AuthScheme:  "Bearer",
+		ContextKey:  "user",
+	}))
+
+	protected.GET("/users/search", userSearch)
+	protected.POST("/users/friends", userFriendAdd)
+	protected.DELETE("/users/friends", userFriendRemove)
+	protected.POST("/users/ignored", userIgnoredAdd)
+	protected.DELETE("/users/ignored", userIgnoredRemove)
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 }
