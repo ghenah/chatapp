@@ -1,0 +1,9 @@
+basePath: /
+host: localhost:8000
+info:
+  contact: {}
+  description: A chat app.
+  title: Chatapp
+  version: v0.1.0
+paths: {}
+swagger: "2.0"
