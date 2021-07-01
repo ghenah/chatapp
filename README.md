@@ -1,1 +1,1 @@
-# chatapp - v0.0.1
+# chatapp - v0.0.2
