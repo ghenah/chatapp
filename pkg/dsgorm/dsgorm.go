@@ -115,8 +115,10 @@ func (ds *DataStoreGORM) AddFriend(userID, friendID uint) error {
 	if err != nil {
 		return err
 	}
-	if ignoredUsers[0].ID == friendID {
-		return idatastore.ErrorUserInIgnoreList
+	if len(ignoredUsers) > 0 {
+		if ignoredUsers[0].ID == friendID {
+			return idatastore.ErrorUserInIgnoreList
+		}
 	}
 
 	err = ds.db.Model(&user).Association("Friends").Append(&User{ID: friendID})
