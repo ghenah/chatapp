@@ -10,4 +10,8 @@ type IDataStore interface {
 
 	// GetUserPassword returns a hashed password of a user and an error.
 	GetUserPassword(username string) ([]byte, error)
+
+	// GetAllUsers returns the list of all users within the system. Only the
+	// usernames are provided.
+	GetAllUsers() ([]string, error)
 }

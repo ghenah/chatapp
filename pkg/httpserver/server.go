@@ -38,5 +38,8 @@ func setUpRouter() {
 	auth.POST("/signup", userRegister)
 	auth.POST("/signin", userAuthencticate)
 
+	api := e.Group("/api/v1")
+	api.GET("/users/search", userSearch)
+
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 }

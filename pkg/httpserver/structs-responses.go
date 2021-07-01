@@ -10,3 +10,7 @@ type ResponseAuthSuccess struct {
 	idatastore.User
 	AccessToken string `json:"access_token"`
 }
+
+type ResponseUserSearch struct {
+	UsersList []string `json:"usersList"`
+}

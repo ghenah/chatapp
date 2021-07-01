@@ -91,6 +91,25 @@ func userAuthencticate(c echo.Context) (err error) {
 	})
 }
 
+// userSearch
+// @Summary List registered users.
+// @Description Provides a list of registered users (usernames only).
+// @Tags user
+// @Produce json
+// @Success 200 {object} ResponseUserSearch
+// @Failure 500
+// @Router /api/v1/users/search/ [get]
+func userSearch(c echo.Context) (err error) {
+	usersList, err := ds.GetAllUsers()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	return writeResponse(c, ResponseUserSearch{
+		UsersList: usersList,
+	})
+}
+
 // writeResponse writes the response in the format specified in the
 // Accept header; the default format is "application/json".
 // Supported formats:

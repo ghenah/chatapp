@@ -84,3 +84,20 @@ func (ds *DataStoreGORM) GetUserPassword(username string) ([]byte, error) {
 
 	return []byte(userResult.Password), nil
 }
+
+// GetAllUsers returns the list of all users within the system. Only the
+// usernames are provided.
+func (ds *DataStoreGORM) GetAllUsers() ([]string, error) {
+	usersResult := []User{}
+	result := ds.db.Order("username asc").Find(&usersResult)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	usersList := []string{}
+	for _, u := range usersResult {
+		usersList = append(usersList, u.Username)
+	}
+
+	return usersList, nil
+}
