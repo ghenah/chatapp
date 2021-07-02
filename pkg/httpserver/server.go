@@ -54,6 +54,7 @@ func setUpRouter() {
 	protected.DELETE("/users/friends", userFriendRemove)
 	protected.POST("/users/ignored", userIgnoredAdd)
 	protected.DELETE("/users/ignored", userIgnoredRemove)
+	protected.PUT("/users/update/password", userUpdatePassword)
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 }

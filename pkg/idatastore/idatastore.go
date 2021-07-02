@@ -33,4 +33,7 @@ type IDataStore interface {
 	// Returns an error. Any former "friends" are not re-added back into the
 	// friends list.
 	RemoveIgnored(userID, ignoredID uint) error
+
+	// UpdateUserPassword updates the password of the user. Returns an error.
+	UpdateUserPassword(userID uint, password string) error
 }

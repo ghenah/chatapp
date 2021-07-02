@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
@@ -81,7 +82,7 @@ func userAuthencticate(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
 	}
-	accessToken, err := generateUserSession(userInfo.ID)
+	accessToken, err := generateUserSession(userInfo.ID, userInfo.Username)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
 	}
@@ -120,7 +121,7 @@ func userSearch(c echo.Context) (err error) {
 // @Produce json
 // @Success 200 {object} ResponseSuccess
 // @Failure 500
-// @Router /api/v1/users/friends/add [post]
+// @Router /api/v1/users/friends [post]
 func userFriendAdd(c echo.Context) (err error) {
 	reqData := &RequestAddUserToList{}
 	if err = c.Bind(reqData); err != nil {
@@ -159,7 +160,7 @@ func userFriendAdd(c echo.Context) (err error) {
 // @Produce json
 // @Success 200 {object} ResponseSuccess
 // @Failure 500
-// @Router /api/v1/users/friends/delete [post]
+// @Router /api/v1/users/friends [delete]
 func userFriendRemove(c echo.Context) (err error) {
 	reqData := &RequestAddUserToList{}
 	if err = c.Bind(reqData); err != nil {
@@ -192,7 +193,7 @@ func userFriendRemove(c echo.Context) (err error) {
 // @Produce json
 // @Success 200 {object} ResponseSuccess
 // @Failure 500
-// @Router /api/v1/users/ignored/add [post]
+// @Router /api/v1/users/ignored [post]
 func userIgnoredAdd(c echo.Context) (err error) {
 	reqData := &RequestAddUserToList{}
 	if err = c.Bind(reqData); err != nil {
@@ -229,7 +230,7 @@ func userIgnoredAdd(c echo.Context) (err error) {
 // @Produce json
 // @Success 200 {object} ResponseSuccess
 // @Failure 500
-// @Router /api/v1/users/friends/delete [post]
+// @Router /api/v1/users/ignored [delete]
 func userIgnoredRemove(c echo.Context) (err error) {
 	reqData := &RequestAddUserToList{}
 	if err = c.Bind(reqData); err != nil {
@@ -248,6 +249,60 @@ func userIgnoredRemove(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
 	}
+
+	return writeResponse(c, ResponseSuccess{Success: true})
+}
+
+// userUpdatePassword
+// @Summary Update the user password.
+// @Description Update the user password. Both the old and the new passwords
+// @Description must the supplied.
+// @Tags user
+// @Accept json
+// @Param body body RequestUserUpdatePassword true "Body must contain a user ID, the old password and the new password"
+// @Produce json
+// @Success 200 {object} ResponseSuccess
+// @Failure 500
+// @Router /api/v1/users/update/password [put]
+func userUpdatePassword(c echo.Context) (err error) {
+	reqData := &RequestUserUpdatePassword{}
+	if err = c.Bind(reqData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// Make sure the UserID belongs to the authenticated user (the owner of
+	// the JWT)
+	u := c.Get("user").(*jwt.Token)
+	claims := u.Claims.(*Claims)
+	if (reqData.UserID != claims.UserID) || (reqData.Username != claims.Username) {
+		fmt.Println("User ID:", reqData.UserID)
+		fmt.Println("Username:", reqData.Username)
+		fmt.Println("JWT User ID:", claims.UserID)
+		fmt.Println("JWT Username:", claims.Username)
+		fmt.Println("Claims:", claims)
+		return echo.NewHTTPError(http.StatusUnauthorized, "incorrect user details")
+	}
+
+	// Validate the user password
+	userPassword, err := ds.GetUserPassword(reqData.Username)
+	if err == idatastore.ErrorUserNotFound {
+		return echo.NewHTTPError(http.StatusBadRequest)
+	} else if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	err = bcrypt.CompareHashAndPassword(userPassword, []byte(reqData.OldPassword))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid login credentials")
+	} else if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	// Update the password
+	newPasswordHashed, err := bcrypt.GenerateFromPassword([]byte(reqData.NewPassword), 12)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	err = ds.UpdateUserPassword(reqData.UserID, string(newPasswordHashed))
 
 	return writeResponse(c, ResponseSuccess{Success: true})
 }

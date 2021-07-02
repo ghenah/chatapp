@@ -172,3 +172,21 @@ func (ds *DataStoreGORM) RemoveIgnored(userID, friendID uint) error {
 
 	return nil
 }
+
+// UpdateUserPassword updates the password of the user. Returns an error.
+func (ds *DataStoreGORM) UpdateUserPassword(userID uint, password string) error {
+	userData := User{
+		ID:       userID,
+		Password: password,
+	}
+
+	result := ds.db.Model(&userData).Updates(userData)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return idatastore.ErrorUserNotFound
+	}
+
+	return nil
+}
