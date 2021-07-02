@@ -190,3 +190,27 @@ func (ds *DataStoreGORM) UpdateUserPassword(userID uint, password string) error 
 
 	return nil
 }
+
+// UpdateUsername updates the password of the user. Returns an error.
+func (ds *DataStoreGORM) UpdateUsername(userID uint, username string) error {
+	userData := User{
+		ID:       userID,
+		Username: username,
+	}
+
+	result := ds.db.Model(&userData).Updates(userData)
+	if result.Error != nil {
+		errorMsg := []byte(result.Error.Error())
+		switch {
+		case mySQLErrors["duplicate entry"].Match(errorMsg):
+			return idatastore.ErrorDuplicateEntry
+		default:
+			return result.Error
+		}
+	}
+	if result.RowsAffected == 0 {
+		return idatastore.ErrorUserNotFound
+	}
+
+	return nil
+}

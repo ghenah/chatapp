@@ -22,3 +22,10 @@ type RequestUserUpdatePassword struct {
 	OldPassword string `json:"oldPassword" validate:"required" format:"string"`
 	NewPassword string `json:"newPassword" validate:"required" format:"string"`
 }
+
+type RequestUserUpdateUsername struct {
+	UserID      uint   `json:"userId" validate:"required" example:"3" format:"uint"`
+	Username    string `json:"Username" validate:"required" example:"johndoe" format:"string"`
+	Password    string `json:"password" validate:"required" format:"string"`
+	NewUsername string `json:"newUsername" validate:"required" example:"johndoe" format:"string"`
+}

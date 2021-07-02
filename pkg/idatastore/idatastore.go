@@ -36,4 +36,7 @@ type IDataStore interface {
 
 	// UpdateUserPassword updates the password of the user. Returns an error.
 	UpdateUserPassword(userID uint, password string) error
+
+	// UpdateUsername updates the username. Returns an error.
+	UpdateUsername(userID uint, newUsername string) error
 }

@@ -1,7 +1,6 @@
 package httpserver
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
@@ -275,11 +274,6 @@ func userUpdatePassword(c echo.Context) (err error) {
 	u := c.Get("user").(*jwt.Token)
 	claims := u.Claims.(*Claims)
 	if (reqData.UserID != claims.UserID) || (reqData.Username != claims.Username) {
-		fmt.Println("User ID:", reqData.UserID)
-		fmt.Println("Username:", reqData.Username)
-		fmt.Println("JWT User ID:", claims.UserID)
-		fmt.Println("JWT Username:", claims.Username)
-		fmt.Println("Claims:", claims)
 		return echo.NewHTTPError(http.StatusUnauthorized, "incorrect user details")
 	}
 
@@ -303,6 +297,62 @@ func userUpdatePassword(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	err = ds.UpdateUserPassword(reqData.UserID, string(newPasswordHashed))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return writeResponse(c, ResponseSuccess{Success: true})
+}
+
+// userUpdateUsername
+// @Summary Update the username.
+// @Description Update the username. The old password must also be supplied.
+// @Tags user
+// @Accept json
+// @Param body body RequestUserUpdateUsername true "Body must contain a user ID, the old password and the new username"
+// @Produce json
+// @Success 200 {object} ResponseSuccess
+// @Failure 500
+// @Router /api/v1/users/update/password [put]
+func userUpdateUsername(c echo.Context) (err error) {
+	reqData := &RequestUserUpdateUsername{}
+	if err = c.Bind(reqData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// Make sure the UserID belongs to the authenticated user (the owner of
+	// the JWT)
+	u := c.Get("user").(*jwt.Token)
+	claims := u.Claims.(*Claims)
+	if reqData.UserID != claims.UserID {
+		return echo.NewHTTPError(http.StatusUnauthorized, "incorrect user details")
+	}
+
+	// Validate the user password
+	userPassword, err := ds.GetUserPassword(reqData.Username)
+	if err == idatastore.ErrorUserNotFound {
+		return echo.NewHTTPError(http.StatusBadRequest)
+	} else if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	err = bcrypt.CompareHashAndPassword(userPassword, []byte(reqData.Password))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid login credentials")
+	} else if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	// Update the username
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	err = ds.UpdateUsername(reqData.UserID, reqData.NewUsername)
+	if err == idatastore.ErrorDuplicateEntry {
+		return echo.NewHTTPError(http.StatusBadRequest, "username taken")
+	} else if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
 
 	return writeResponse(c, ResponseSuccess{Success: true})
 }
