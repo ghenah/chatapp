@@ -12,5 +12,5 @@ type ResponseAuthSuccess struct {
 }
 
 type ResponseUserSearch struct {
-	UsersList []string `json:"usersList"`
+	UsersList []idatastore.UserShort `json:"usersList"`
 }

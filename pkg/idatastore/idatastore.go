@@ -13,7 +13,7 @@ type IDataStore interface {
 
 	// GetAllUsers returns the list of all users within the system. Only the
 	// usernames are provided.
-	GetAllUsers() ([]string, error)
+	GetAllUsers() ([]UserShort, error)
 
 	// AddFriend adds a user to the friends list of the current user. If the
 	// user is in the ignored list, abort the operation. Returns
