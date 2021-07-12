@@ -48,10 +48,12 @@ func (ds *DataStoreGORM) GetUser(username string) (idatastore.User, error) {
 	}
 
 	userOut := idatastore.User{
-		ID:       userResult.ID,
-		Username: userResult.Username,
-		Email:    userResult.Email,
-		RegDate:  userResult.RegDate,
+		ID:          userResult.ID,
+		Username:    userResult.Username,
+		Email:       userResult.Email,
+		RegDate:     userResult.RegDate,
+		FriendsList: []idatastore.UserShort{},
+		IgnoreList:  []idatastore.UserShort{},
 	}
 
 	for _, f := range userResult.Friends {
