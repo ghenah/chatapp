@@ -8,5 +8,537 @@
     },
     "host": "localhost:8000",
     "basePath": "/",
-    "paths": {}
+    "paths": {
+        "/api/v1/users/friends": {
+            "post": {
+                "description": "Adds a new friend to the list of friends of a user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Add a new friend to a user's friend list.",
+                "parameters": [
+                    {
+                        "description": "Body must contain a user ID and a friend's ID.",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.RequestAddUserToList"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ResponseSuccess"
+                        }
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove a friend to the list of friends of a user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Remove a friend from the user's friends list.",
+                "parameters": [
+                    {
+                        "description": "Body must contain a user ID and a friend's ID.",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.RequestAddUserToList"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ResponseSuccess"
+                        }
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/users/ignored": {
+            "post": {
+                "description": "Adds a new user to the list of friends of a user. If the user\nwas in the friends list, they are removed from it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Add a new user to a user's ignore list.",
+                "parameters": [
+                    {
+                        "description": "Body must contain a user ID and an ignored user's ID.",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.RequestAddUserToList"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ResponseSuccess"
+                        }
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove a user from the ignored list of a user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Remove a user from the user's ignored list.",
+                "parameters": [
+                    {
+                        "description": "Body must contain a user ID and a friend's ID.",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.RequestAddUserToList"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ResponseSuccess"
+                        }
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/users/profile": {
+            "get": {
+                "description": "Get the up-to-date information on an authenticated user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Get authenticated user info.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ResponseAuthSuccess"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/users/search/": {
+            "get": {
+                "description": "Provides a list of registered users (usernames only).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "List registered users.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ResponseUserSearch"
+                        }
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/users/update/password": {
+            "put": {
+                "description": "Update the user password. Both the old and the new passwords\nmust the supplied.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Update the user password.",
+                "parameters": [
+                    {
+                        "description": "Body must contain a user ID, the old password and the new password",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.RequestUserUpdatePassword"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ResponseSuccess"
+                        }
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/users/update/username": {
+            "put": {
+                "description": "Update the username. The old password must also be supplied.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Update the username.",
+                "parameters": [
+                    {
+                        "description": "Body must contain a user ID, the old password and the new username",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.RequestUserUpdateUsername"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ResponseSuccess"
+                        }
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/auth/signin": {
+            "post": {
+                "description": "Check user's login credentials and provide an access token\nif the registration was successful.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Authenticate a user.",
+                "parameters": [
+                    {
+                        "description": "Body must contain a username and a password",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.RequestUserAuthenticate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ResponseAuthSuccess"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/auth/signup": {
+            "post": {
+                "description": "Register a new user by providing a password as well as a\nunique username and email address.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register a new user.",
+                "parameters": [
+                    {
+                        "description": "Body must contain a username, an email, and a password",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.RequestUserRegister"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ResponseSuccess"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "httpserver.RequestAddUserToList": {
+            "type": "object",
+            "required": [
+                "friendId",
+                "userId"
+            ],
+            "properties": {
+                "friendId": {
+                    "type": "integer",
+                    "format": "uint",
+                    "example": 5
+                },
+                "userId": {
+                    "type": "integer",
+                    "format": "uint",
+                    "example": 3
+                }
+            }
+        },
+        "httpserver.RequestUserAuthenticate": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "format": "string"
+                },
+                "username": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "johndoe"
+                }
+            }
+        },
+        "httpserver.RequestUserRegister": {
+            "type": "object",
+            "required": [
+                "email",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "johndoe@example.com"
+                },
+                "password": {
+                    "type": "string",
+                    "format": "string"
+                },
+                "username": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "johndoe"
+                }
+            }
+        },
+        "httpserver.RequestUserUpdatePassword": {
+            "type": "object",
+            "required": [
+                "newPassword",
+                "oldPassword",
+                "userId",
+                "username"
+            ],
+            "properties": {
+                "newPassword": {
+                    "type": "string",
+                    "format": "string"
+                },
+                "oldPassword": {
+                    "type": "string",
+                    "format": "string"
+                },
+                "userId": {
+                    "type": "integer",
+                    "format": "uint",
+                    "example": 3
+                },
+                "username": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "johndoe"
+                }
+            }
+        },
+        "httpserver.RequestUserUpdateUsername": {
+            "type": "object",
+            "required": [
+                "newUsername",
+                "password",
+                "userId",
+                "username"
+            ],
+            "properties": {
+                "newUsername": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "johndoe"
+                },
+                "password": {
+                    "type": "string",
+                    "format": "string"
+                },
+                "userId": {
+                    "type": "integer",
+                    "format": "uint",
+                    "example": 3
+                },
+                "username": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "johndoe"
+                }
+            }
+        },
+        "httpserver.ResponseAuthSuccess": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "friendsList": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/idatastore.UserShort"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "ignoreList": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/idatastore.UserShort"
+                    }
+                },
+                "regDate": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "httpserver.ResponseSuccess": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "httpserver.ResponseUserSearch": {
+            "type": "object",
+            "properties": {
+                "usersList": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/idatastore.UserShort"
+                    }
+                }
+            }
+        },
+        "idatastore.UserShort": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        }
+    }
 }
