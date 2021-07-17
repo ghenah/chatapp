@@ -54,6 +54,7 @@ func setUpRouter() {
 	protected.DELETE("/users/friends", userFriendRemove)
 	protected.POST("/users/ignored", userIgnoredAdd)
 	protected.DELETE("/users/ignored", userIgnoredRemove)
+	protected.GET("/users/profile", getAuthenticatedUserInfo)
 	protected.PUT("/users/update/password", userUpdatePassword)
 	protected.PUT("/users/update/username", userUpdateUsername)
 

@@ -25,7 +25,7 @@ type RequestUserUpdatePassword struct {
 
 type RequestUserUpdateUsername struct {
 	UserID      uint   `json:"userId" validate:"required" example:"3" format:"uint"`
-	Username    string `json:"Username" validate:"required" example:"johndoe" format:"string"`
+	Username    string `json:"username" validate:"required" example:"johndoe" format:"string"`
 	Password    string `json:"password" validate:"required" format:"string"`
 	NewUsername string `json:"newUsername" validate:"required" example:"johndoe" format:"string"`
 }

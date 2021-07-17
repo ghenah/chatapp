@@ -8,7 +8,11 @@ type ResponseSuccess struct {
 
 type ResponseAuthSuccess struct {
 	idatastore.User
-	AccessToken string `json:"access_token"`
+	AccessToken string `json:"accessToken"`
+}
+
+type ResponseAuthorizedUserInfo struct {
+	idatastore.User
 }
 
 type ResponseUserSearch struct {

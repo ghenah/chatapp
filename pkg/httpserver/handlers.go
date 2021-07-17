@@ -92,6 +92,41 @@ func userAuthencticate(c echo.Context) (err error) {
 	})
 }
 
+// getAuthenticatedUserInfo
+// @Summary Get authenticated user info.
+// @Description Get the up-to-date information on an authenticated user.
+// @Tags user
+// @Produce json
+// @Success 200 {object} ResponseAuthSuccess
+// @Failure 400
+// @Failure 500
+// @Router /api/v1/users/profile [get]
+func getAuthenticatedUserInfo(c echo.Context) (err error) {
+	reqData := &RequestUserAuthenticate{}
+	if err = c.Bind(reqData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// Get the user info from the access token.
+	u := c.Get("user").(*jwt.Token)
+	claims := u.Claims.(*Claims)
+
+	// Generate the user "session"
+	userInfo, err := ds.GetUser(claims.Username)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+	// Make sure the user ID in the access token corresponds to the ID of the
+	// user fetched from the database (as users are fetched by the username).
+	if claims.UserID != userInfo.ID {
+		return echo.NewHTTPError(http.StatusBadRequest, "user ID and username don't match")
+	}
+
+	return writeResponse(c, ResponseAuthorizedUserInfo{
+		User: userInfo,
+	})
+}
+
 // userSearch
 // @Summary List registered users.
 // @Description Provides a list of registered users (usernames only).
@@ -313,7 +348,7 @@ func userUpdatePassword(c echo.Context) (err error) {
 // @Produce json
 // @Success 200 {object} ResponseSuccess
 // @Failure 500
-// @Router /api/v1/users/update/password [put]
+// @Router /api/v1/users/update/username [put]
 func userUpdateUsername(c echo.Context) (err error) {
 	reqData := &RequestUserUpdateUsername{}
 	if err = c.Bind(reqData); err != nil {
