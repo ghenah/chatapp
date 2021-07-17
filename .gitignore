@@ -1,9 +1,11 @@
 .env
 
 client/node_modules
+client/.env
 
 bin/
 
 .vscode/
 .devcontainer/
+vetur.config.js
 Makefile

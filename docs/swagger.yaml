@@ -1,0 +1,374 @@
+basePath: /
+definitions:
+  httpserver.RequestAddUserToList:
+    properties:
+      friendId:
+        example: 5
+        format: uint
+        type: integer
+      userId:
+        example: 3
+        format: uint
+        type: integer
+    required:
+    - friendId
+    - userId
+    type: object
+  httpserver.RequestUserAuthenticate:
+    properties:
+      password:
+        format: string
+        type: string
+      username:
+        example: johndoe
+        format: string
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  httpserver.RequestUserRegister:
+    properties:
+      email:
+        example: johndoe@example.com
+        format: string
+        type: string
+      password:
+        format: string
+        type: string
+      username:
+        example: johndoe
+        format: string
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  httpserver.RequestUserUpdatePassword:
+    properties:
+      newPassword:
+        format: string
+        type: string
+      oldPassword:
+        format: string
+        type: string
+      userId:
+        example: 3
+        format: uint
+        type: integer
+      username:
+        example: johndoe
+        format: string
+        type: string
+    required:
+    - newPassword
+    - oldPassword
+    - userId
+    - username
+    type: object
+  httpserver.RequestUserUpdateUsername:
+    properties:
+      newUsername:
+        example: johndoe
+        format: string
+        type: string
+      password:
+        format: string
+        type: string
+      userId:
+        example: 3
+        format: uint
+        type: integer
+      username:
+        example: johndoe
+        format: string
+        type: string
+    required:
+    - newUsername
+    - password
+    - userId
+    - username
+    type: object
+  httpserver.ResponseAuthSuccess:
+    properties:
+      accessToken:
+        type: string
+      email:
+        type: string
+      friendsList:
+        items:
+          $ref: '#/definitions/idatastore.UserShort'
+        type: array
+      id:
+        type: integer
+      ignoreList:
+        items:
+          $ref: '#/definitions/idatastore.UserShort'
+        type: array
+      regDate:
+        type: string
+      username:
+        type: string
+    type: object
+  httpserver.ResponseSuccess:
+    properties:
+      success:
+        type: boolean
+    type: object
+  httpserver.ResponseUserSearch:
+    properties:
+      usersList:
+        items:
+          $ref: '#/definitions/idatastore.UserShort'
+        type: array
+    type: object
+  idatastore.UserShort:
+    properties:
+      id:
+        type: integer
+      username:
+        type: string
+    type: object
+host: localhost:8000
+info:
+  contact: {}
+  description: A chat app.
+  title: Chatapp
+  version: v0.1.0
+paths:
+  /api/v1/users/friends:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a friend to the list of friends of a user.
+      parameters:
+      - description: Body must contain a user ID and a friend's ID.
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/httpserver.RequestAddUserToList'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.ResponseSuccess'
+        "500":
+          description: ""
+      summary: Remove a friend from the user's friends list.
+      tags:
+      - user
+    post:
+      consumes:
+      - application/json
+      description: Adds a new friend to the list of friends of a user.
+      parameters:
+      - description: Body must contain a user ID and a friend's ID.
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/httpserver.RequestAddUserToList'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.ResponseSuccess'
+        "500":
+          description: ""
+      summary: Add a new friend to a user's friend list.
+      tags:
+      - user
+  /api/v1/users/ignored:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a user from the ignored list of a user.
+      parameters:
+      - description: Body must contain a user ID and a friend's ID.
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/httpserver.RequestAddUserToList'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.ResponseSuccess'
+        "500":
+          description: ""
+      summary: Remove a user from the user's ignored list.
+      tags:
+      - user
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Adds a new user to the list of friends of a user. If the user
+        was in the friends list, they are removed from it.
+      parameters:
+      - description: Body must contain a user ID and an ignored user's ID.
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/httpserver.RequestAddUserToList'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.ResponseSuccess'
+        "500":
+          description: ""
+      summary: Add a new user to a user's ignore list.
+      tags:
+      - user
+  /api/v1/users/profile:
+    get:
+      description: Get the up-to-date information on an authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.ResponseAuthSuccess'
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Get authenticated user info.
+      tags:
+      - user
+  /api/v1/users/search/:
+    get:
+      description: Provides a list of registered users (usernames only).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.ResponseUserSearch'
+        "500":
+          description: ""
+      summary: List registered users.
+      tags:
+      - user
+  /api/v1/users/update/password:
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Update the user password. Both the old and the new passwords
+        must the supplied.
+      parameters:
+      - description: Body must contain a user ID, the old password and the new password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/httpserver.RequestUserUpdatePassword'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.ResponseSuccess'
+        "500":
+          description: ""
+      summary: Update the user password.
+      tags:
+      - user
+  /api/v1/users/update/username:
+    put:
+      consumes:
+      - application/json
+      description: Update the username. The old password must also be supplied.
+      parameters:
+      - description: Body must contain a user ID, the old password and the new username
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/httpserver.RequestUserUpdateUsername'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.ResponseSuccess'
+        "500":
+          description: ""
+      summary: Update the username.
+      tags:
+      - user
+  /auth/signin:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Check user's login credentials and provide an access token
+        if the registration was successful.
+      parameters:
+      - description: Body must contain a username and a password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/httpserver.RequestUserAuthenticate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.ResponseAuthSuccess'
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Authenticate a user.
+      tags:
+      - auth
+  /auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Register a new user by providing a password as well as a
+        unique username and email address.
+      parameters:
+      - description: Body must contain a username, an email, and a password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/httpserver.RequestUserRegister'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.ResponseSuccess'
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Register a new user.
+      tags:
+      - auth
+swagger: "2.0"
