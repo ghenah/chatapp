@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div id="appContainer">
       <app-header></app-header>
       <main>
         <router-view></router-view>
@@ -38,6 +38,7 @@ export default {
 </script>
 
 <style>
+
   button {
     margin-right: 4px;
   }

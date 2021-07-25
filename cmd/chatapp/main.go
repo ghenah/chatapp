@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/ghenah/chatapp/pkg/chatapp"
 	"github.com/ghenah/chatapp/pkg/dsgorm"
 	"github.com/ghenah/chatapp/pkg/httpserver"
 	"github.com/joho/godotenv"
@@ -40,12 +41,23 @@ func main() {
 	}
 	defer sqlDB.Close()
 
+	chatApp, err := chatapp.Init(&chatapp.ChatAppConfig{UsersDS: dsgorm.GetDataStore()})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Start the HTTP server
 	serverConfig := httpserver.ServerConfig{
-		AppAddressHostname: os.Getenv("APP_ADDRESS_HOSTNAME"),
-		AppAddressPort:     os.Getenv("APP_ADDRESS_PORT"),
+		AppAddressHostname:    os.Getenv("APP_ADDRESS_HOSTNAME"),
+		AppAddressPort:        os.Getenv("APP_ADDRESS_PORT"),
+		JWTSecretKey:          os.Getenv("APP_JWT_SECRET_KEY"),
+		JWTWebSocketSecretKey: os.Getenv("APP_JWT_WEB_SOCKET_SECRET_KEY"),
+		AppWsOriginSchema:     os.Getenv("APP_WS_ORIGIN_SCHEMA"),
+		AppWsOriginDomain:     os.Getenv("APP_WS_ORIGIN_DOMAIN"),
+		AppWsOriginPort:       os.Getenv("APP_WS_ORIGIN_PORT"),
 		// Pass the data store handle
-		DS: dsgorm.GetDataStore(),
+		DS:      dsgorm.GetDataStore(),
+		ChatApp: chatApp,
 	}
 	httpserver.StartServer(serverConfig)
 }

@@ -20,6 +20,20 @@ export default {
             loggedIn: true,
           });
 
+          // Auto-authenticate the user within the chat (websocket) itself
+          context
+            .dispatch("chat/getTicket", null, { root: true })
+            .then(() => {
+              context.dispatch("chat/openWS", null, { root: true });
+
+              resolve();
+              return;
+            })
+            .catch((errorMsg) => {
+              reject(errorMsg);
+              return;
+            });
+
           resolve();
         } else {
           reject(response.data.message);
@@ -29,6 +43,8 @@ export default {
   },
   logout(context) {
     context.commit("clearUserSession");
+    // Clear the chat app info ()
+    context.commit("chat/cleanUpSessionInfo", null, { root: true });
     // Also clear the session-related items from the local storage
     ["loggedIn", "accessToken"].forEach((key) => {
       window.localStorage.removeItem(key);

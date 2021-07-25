@@ -2,7 +2,7 @@
   <div>
     <h2>Friends[{{friends.length}}]</h2>
     <ul>
-      <li v-for="friend in friends" :key="friend.id">{{friend.username}} <button @click="removeFriend(friend.id)">Remove</button></li>
+      <li v-for="friend in friends" :key="friend.id">{{friend.username}} <button @click="removeFriend(friend.id)">X</button></li>
     </ul>
   </div>
 </template>
@@ -22,3 +22,11 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+button {
+  padding: 0px;
+  height: 1rem;
+  width: 1rem;
+}
+</style>

@@ -392,6 +392,71 @@ func userUpdateUsername(c echo.Context) (err error) {
 	return writeResponse(c, ResponseSuccess{Success: true})
 }
 
+// chatRoomSearch
+// @Summary List currently active chat rooms.
+// @Description Provides a list of currently active chat rooms. The rooms that
+// @Description have their owners present in the user's ignore list are
+// @Descripiton not included.
+// @Tags chat
+// @Produce json
+// @Success 200 {object} ResponseChatRoomSearch
+// @Failure 500
+// @Router /api/v1/chat/rooms/search/ [get]
+func chatRoomSearch(c echo.Context) (err error) {
+	// Take the user details out of the access token
+	u := c.Get("user").(*jwt.Token)
+	claims := u.Claims.(*Claims)
+
+	// The user ID is required for the app to filter out ingored users' chats.
+	chatRoomsList, err := ca.GetAllChatRooms(claims.UserID, claims.Username, true)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	return writeResponse(c, ResponseChatRoomSearch{
+		ChatRoomsList: chatRoomsList,
+	})
+}
+
+// chatGetWSTicket
+// @Summary Get a WebSocket authentication ticket.
+// @Description Obtain a WebSocket authentication ticket, which must be
+// @Description provided during the initial handshake.
+// @Tags chat
+// @Produce json
+// @Success 200 {object} ResponseWSTicket
+// @Failure 500
+// @Router /api/v1/chat/ticket [get]
+func chatGetWSTicket(c echo.Context) (err error) {
+	// Take the user details out of the access token
+	u := c.Get("user").(*jwt.Token)
+	claims := u.Claims.(*Claims)
+
+	ticket, err := generateUserSession(claims.UserID, claims.Username)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	return writeResponse(c, ResponseWSTicket{
+		WSTicket: ticket,
+	})
+}
+
+// chatConnectionInit performs the necessary chat initialization steps
+// when a user upgrades their connection to WebSocket.
+func chatConnectionInit(c echo.Context) (err error) {
+	// Take the user details out of the access token
+	ticket := c.Get("ticket").(*jwt.Token)
+	claims := ticket.Claims.(*Claims)
+
+	err = serveConnection(c.Response(), c.Request(), ca.InMsgQueue, claims.UserID, claims.Username)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+	}
+
+	return nil
+}
+
 // writeResponse writes the response in the format specified in the
 // Accept header; the default format is "application/json".
 // Supported formats:

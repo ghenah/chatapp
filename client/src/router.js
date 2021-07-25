@@ -5,6 +5,7 @@ import UserRegistration from "./pages/UserRegistration.vue";
 import UserAuthentication from "./pages/UserAuthentication.vue";
 import AccountSettings from "./pages/AccountSettings.vue";
 import SearchUsers from "./pages/SearchUsers.vue";
+import SearchChatRooms from "./pages/SearchChatRooms.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,6 +14,7 @@ const router = createRouter({
     { path: "/signup", component: UserRegistration },
     { path: "/signin", component: UserAuthentication },
     { path: "/users/search", component: SearchUsers },
+    { path: "/chat/search", component: SearchChatRooms },
     { path: "/account/settings", component: AccountSettings },
   ],
 });
