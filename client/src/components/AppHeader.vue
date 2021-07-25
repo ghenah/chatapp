@@ -17,6 +17,9 @@
       <li class="app-header-navbar-item" v-if="loggedIn">
         <router-link to="/users/search">Search Users</router-link>
       </li>
+      <li class="app-header-navbar-item" v-if="loggedIn">
+        <router-link to="/chat/search">Search Chat Rooms</router-link>
+      </li>
     </ul>
   </div>
 </template>

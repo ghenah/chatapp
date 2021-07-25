@@ -2,7 +2,7 @@
   <div>
     <h2>Ignored[{{ignoredList.length}}]</h2>
     <ul>
-      <li v-for="ignoredUser in ignoredList" :key="ignoredUser.id">{{ignoredUser.username}} <button @click="removeIgnoredUser(ignoredUser.id)">Remove</button> </li>
+      <li v-for="ignoredUser in ignoredList" :key="ignoredUser.id">{{ignoredUser.username}} <button @click="removeIgnoredUser(ignoredUser.id)">X</button> </li>
     </ul>
   </div>
 </template>
@@ -21,3 +21,11 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+button {
+  padding: 0px;
+  height: 1rem;
+  width: 1rem;
+}
+</style>
