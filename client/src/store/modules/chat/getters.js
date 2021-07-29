@@ -17,6 +17,9 @@ export default {
   roomsList(state) {
     return Array.from(state.roomsList, (room) => room[1]);
   },
+  notifications(state) {
+    return state.notifications;
+  },
   roomVisPublic(state) {
     return state.roomVisPublic;
   },

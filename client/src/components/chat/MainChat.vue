@@ -1,20 +1,25 @@
 <template>
   <div id="mainChatContainer">
-    {{connected ? "Connected" : ""}}
-    <button v-if="!connected" @click="onChatServerConnect">Connect</button>
-    <form id="formNewRoom" @submit.prevent="onNewChatRoom">
-      <select v-model="newRoomVisibility">
-        <option :value="roomVisPublic">Public</option>
-        <option :value="roomVisPrivate">Private</option>
-      </select>
-      <input type="submit" value="New Room">
-      <input v-model="newRoomName" type="text" placeholder="Room name mandatory">
-    </form>
+    <div>
+      {{connected ? "Connected" : ""}}
+      <div role="button" v-if="!connected" @click="onChatServerConnect" id="connectBtn">Connect</div>
+    </div>
+    <div id="chatControls">
+      <form id="formNewRoom" @submit.prevent="onNewChatRoom">
+        <select v-model="newRoomVisibility">
+          <option :value="roomVisPublic">Public</option>
+          <option :value="roomVisPrivate">Private</option>
+        </select>
+        <input type="submit" value="New Room">
+        <input v-model="newRoomName" type="text" placeholder="Room name mandatory">
+      </form>
+      <div v-if="notifNumber > 0" id="notificationsIcon" @click="onNotifIconClick">{{notifNumber}}</div>
+    </div>
     <div id="chatArea">
       <div id="roomsList">
         <ul>
           <li v-for="room in rooms" :key="room.id">
-            <div @click="onChatRoomSelected(room.id)" :class="{'room-name-active': room.id === activeRoomId}" class="room-name">{{room.name}}</div>
+            <div @click="onChatRoomSelected(room.id)" @contextmenu.prevent="onChatRoomCM($event, room.id, room.name)" :class="{'room-name-active': room.id === activeRoomId}" class="room-name">{{room.name}}</div>
             <ul v-if="room.id === activeRoomId">
               <li v-for="username, userId in room.activeUsers" :key="userId" class="users-list-item">{{username}}</li>
             </ul>
@@ -35,17 +40,108 @@
         <input id="chatTextArea" type="text" v-model="newOutMessage" @keyup.enter="onNewOutMessage">
       </div>
     </div>
+    <base-context-menu ref="contextMenu" :cfg="cmCfg" :actions="cmActions" @closed="cmCleanup">
+      <template #menuName="{cmName}">
+        {{cmName}}
+      </template>
+      <template #action="{actionName, cb}">
+        <div @click="cb">{{actionName}}</div>
+      </template>
+    </base-context-menu>
+    <base-popup-window ref="popupWindow" :dimensions="pwUsersList.dimensions">
+      <div class="pwListSwitcher">
+        <div class="pwListSwitcherItem" @click="onInviteListSwitch('search')">Search</div>
+        <div class="pwListSwitcherItem" @click="onInviteListSwitch('friends')">Friends</div>
+      </div>
+      <users-search v-if="pwCurrentInviteList === 'search' ">
+        <template #userItem="{uUsername, uId}">
+          <div class="plUserItem">
+            <div class="plUserItemName">
+              {{uUsername}}
+            </div>
+            <div class="plUserItemActions">
+              <div @click="onUserInvite(uId, uUsername)">Invite</div>
+            </div>
+          </div>
+        </template>
+      </users-search>
+      <friends-list v-if="pwCurrentInviteList === 'friends' ">
+        <template #friendItem="{frUsername, frId}">
+          <div class="plUserItem">
+            <div class="plUserItemName">
+              {{frUsername}}
+            </div>
+            <div class="plUserItemActions">
+              <div @click="onUserInvite(frId, frUsername)">Invite</div>
+            </div>
+          </div>
+        </template>
+      </friends-list>
+    </base-popup-window>
+    <base-popup-window ref="pwNotifications" :dimensions="pwNotifications.dimensions">
+      <notifications>
+        <template #notifItem="{n}">
+          <div class="pwNotifItem">
+            <div class="pwInvInfo">
+              <div class="pwInvInfoHeader">{{n.username}} invites you to join:</div>
+              <div class="pwInvInfoBody">{{n.roomName}}</div>
+            </div>
+            <div class="pwInvInfoAcceptDecline">
+              <base-button :btnType="'default'" :btnClass="'positive'">
+                <template #default>
+                  <div @click="onAcceptInvitation(n.id, n.roomId, true)">Accept</div>
+                </template>
+              </base-button>
+              <base-button :btnType="'default'" :btnClass="'negative'">
+                <template #default>
+                  <div @click="onAcceptInvitation(n.id, n.roomId, false)">Decline</div>
+                </template>
+              </base-button>
+            </div>
+          </div>
+        </template>
+      </notifications>
+    </base-popup-window>
   </div>
 </template>
 
 <script>
+import UsersSearch from "../getters/UsersSearch.vue";
+import FriendsList from "../getters/FriendsList.vue";
+import Notifications from "../getters/Notifications.vue";
+
 export default {
+  components: {
+    UsersSearch,
+    FriendsList,
+    Notifications
+  },
   data() {
     return {
       newRoomVisibility: 1,
       newRoomName: "",
       newOutMessage: "",
       activeChatId: 0,
+      cmCfg: {
+        hadName: false,
+        name: "",
+      },
+      cmActions: [],
+      pwUsersList: {
+        roomId: 0,
+        roomName: "",
+        dimensions: {
+          width: 240,
+          height: 380
+        }
+      },
+      pwNotifications: {
+        dimensions: {
+          width: 220,
+          height: 300,
+        }
+      },
+      pwCurrentInviteList: "friends",
     }
   },
   computed: {
@@ -66,6 +162,9 @@ export default {
     },
     connected() {
       return this.$store.getters["chat/connected"];
+    },
+    notifNumber() {
+      return this.$store.getters["chat/notifications"].length;
     }
   },
   methods: {
@@ -98,6 +197,44 @@ export default {
     },
     onLeaveChatRoom() {
       this.$store.dispatch("chat/leaveChatRoom", {roomId: this.activeRoomId});
+    },
+    onUserInvite(inviteeId, inviteeUsername) {
+      this.$store.dispatch("chat/inviteUser", {inviteeId, inviteeUsername, roomId: this.pwUsersList.roomId});
+    },
+    onAcceptInvitation(invId, roomId, accepted) {
+      this.$store.dispatch("chat/acceptInvitation", {invId, roomId, accepted})
+    },
+    onInviteUsersWindow(roomId, roomName) {
+      this.pwUsersList.roomId = roomId;
+      this.pwUsersList.roomName = roomName;
+      this.$refs.popupWindow.open();
+    },
+    onChatRoomCM(e, roomId, roomName) {
+      this.cmCfg = {
+        hasName: true,
+        name: roomName
+      }
+      this.cmActions = [
+        {
+          name: "Invite users",
+          action: () => {
+            this.$refs.contextMenu.close();
+            this.onInviteUsersWindow(roomId);
+          }
+        }
+      ]
+
+      this.$refs.contextMenu.open(e)
+    },
+    cmCleanup() {
+      this.cmCfg = {};
+      this.cmActions = [];
+    },
+    onInviteListSwitch(listName) {
+      this.pwCurrentInviteList = listName;
+    },
+    onNotifIconClick() {
+      this.$refs.pwNotifications.open();
     }
   }
 }
@@ -153,12 +290,75 @@ ul {
   border-top: 1px solid black
 }
 #formNewRoom {
-  border: solid 1px black;
-  border-left: 0px;
-  border-right: 0px;
   padding: 8px;
 }
 #formNewRoom > * {
   margin-right: 4px;
+}
+.plUserItem {
+  padding: 4px;
+  display: flex;
+}
+.plUserItem:hover {
+  background-color: hsl(230, 30%, 70%);
+}
+.plUserItem .plUserItemActions {
+  margin-left: auto;
+  visibility: hidden;
+}
+.plUserItem:hover .plUserItemActions {
+  visibility: visible;
+}
+.pwListSwitcher {
+  display: flex;
+  justify-content: space-evenly;
+}
+.pwListSwitcherItem {
+  padding: 4px;
+  display: flexbox;
+  text-decoration: underline;
+}
+.pwNotifItem {
+  display: flex
+}
+.pwInvInfo {
+  width: 160px
+}
+.pwInvInfoHeader {
+  text-align: center;
+  font-size: 12px;
+}
+.pwInvInfoBody {
+  text-align: center;
+  font-size: 14px;
+}
+.pwInvInfoAcceptDecline {
+  width: 60px;
+  display: flex;
+  flex-direction: column;
+}
+#chatControls {
+  display: flex;
+  border: solid 1px black;
+  border-left: 0px;
+  border-right: 0px;
+}
+#notificationsIcon {
+  text-align: center;
+  width: 20px;
+  margin-left: auto;
+  background: #ff3333;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+}
+#connectBtn {
+  display: inline-block;
+  padding: 2px 4px;
+  font-family: sans-serif;
+  height: 100%;
+  border-width: 0px;
+  background: #ff3333;
+  color: white;
 }
 </style>

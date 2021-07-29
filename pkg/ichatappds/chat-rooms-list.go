@@ -7,4 +7,9 @@ type ChatRoomsList interface {
 	GetAllRoomsInfoShort() ([]ChatRoomShort, error)
 	AddUserToRoom(userID uint, username string, roomID uint) error
 	RemoveUserFromRoom(userID, roomID uint) error
+	AddInvitee(userID, inviteeID, roomID uint) error
+	GetRoomName(roomID uint) (string, error)
+	RemoveUserFromPending(userID, roomID uint) error
+	GetRoomVisibility(roomID uint) (uint, error)
+	DeleteRoom(roomID uint) []uint
 }

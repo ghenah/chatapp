@@ -93,6 +93,14 @@ func (ca *ChatApp) GetUserRoomsInfo(userID uint) {
 //
 // The function returns an error.
 func (ca *ChatApp) CreateChatRoom(userID uint, username string, roomVisibility uint, name string) error {
+	// The room visibility type allowed to be set by a user is either "public"
+	// or "private". Abort the operation if the value is invalid, as the
+	// types are supposed to be hardcoded into the client and cannot be a
+	// user error.
+	if roomVisibility != ichatappds.VISIBILITY_PUBLIC && roomVisibility != ichatappds.VISIBILITY_PRIVATE {
+		return ErrorForbiddenChatVisibility
+	}
+
 	// Create a room (the room author needn't send a separate request
 	// to join the room).
 	roomID, activeUsers, err := ca.chatRoomsList.NewRoom(userID, username, roomVisibility, name)
@@ -250,6 +258,119 @@ func (ca *ChatApp) LeaveChatRoom(userID uint, roomID uint) {
 	})
 }
 
+func (ca *ChatApp) InviteUser(userID, inviteeID, roomID uint, username, inviteeUsername string) {
+	if userID == inviteeID {
+		return
+	}
+
+	// Do not procede with the invitation if the user is in the invitee's
+	// ignore list or vice versa.
+	if ignoreListConflictsFound(userID, inviteeID, username, inviteeUsername) {
+		fmt.Println("StartPersonalChat: ignore list conflicts found: aborting") // RRemove
+		return
+	}
+
+	err := ca.chatRoomsList.AddInvitee(userID, inviteeID, roomID)
+	if err != nil {
+		return
+	}
+
+	room, err := ca.chatRoomsList.GetRoomInfo(roomID)
+	if err != nil {
+		return
+	}
+	outChannels, err := ca.clientSessionsList.GetOutChannels([]uint{inviteeID})
+	ca.Broadcast(outChannels, ichatappds.NotificationRoomInvitation{
+		Type:       ichatappds.NOTIFICATION_ROOM_INVITATION,
+		RoomID:     roomID,
+		UserID:     userID,
+		Username:   username,
+		Visibility: room.Visibility,
+		RoomName:   room.Name,
+	})
+}
+
+func (ca *ChatApp) StartPersonalChat(userID uint, username string, inviteeID uint, inviteeUsername string) {
+	if userID == inviteeID {
+		return
+	}
+	if ignoreListConflictsFound(userID, inviteeID, username, inviteeUsername) {
+		fmt.Println("StartPersonalChat: ignore list conflicts found: aborting") // RRemove
+		return
+	}
+
+	roomName := username + " - " + inviteeUsername
+	roomID, activeUsers, err := ca.chatRoomsList.NewRoom(userID, username, ichatappds.VISIBILITY_PERSONAL, roomName)
+	if err != nil {
+		return
+	}
+
+	// "Broadcast" the new room to all user's clients.
+	outChannels, err := ca.clientSessionsList.GetOutChannels([]uint{userID})
+	if err != nil {
+		return
+	}
+	ca.Broadcast(outChannels, ichatappds.NotificationNewRoom{
+		Type:        ichatappds.NOTIFICATION_NEW_ROOM,
+		Name:        roomName,
+		ID:          roomID,
+		Visibility:  ichatappds.VISIBILITY_PERSONAL,
+		ActiveUsers: activeUsers,
+	})
+
+	err = ca.chatRoomsList.AddInvitee(userID, inviteeID, roomID)
+	if err != nil {
+		return
+	}
+
+	room, err := ca.chatRoomsList.GetRoomInfo(roomID)
+	if err != nil {
+		return
+	}
+	outChannels, err = ca.clientSessionsList.GetOutChannels([]uint{inviteeID})
+	ca.Broadcast(outChannels, ichatappds.NotificationRoomInvitation{
+		Type:       ichatappds.NOTIFICATION_ROOM_INVITATION,
+		RoomID:     roomID,
+		UserID:     userID,
+		Username:   username,
+		Visibility: room.Visibility,
+		RoomName:   room.Name,
+	})
+}
+
+func (ca *ChatApp) AcceptInvitation(userID uint, username string, roomID uint, accepted bool) {
+	if !accepted {
+		roomVisibility, err := ca.chatRoomsList.GetRoomVisibility(roomID)
+		if err != nil {
+			return
+		}
+
+		if roomVisibility == ichatappds.VISIBILITY_PERSONAL {
+			ca.DeleteRoom(roomID)
+
+			return
+		}
+
+		ca.chatRoomsList.RemoveUserFromPending(userID, roomID)
+		return
+	}
+
+	ca.JoinChatRoom(userID, username, roomID)
+}
+
+func (ca *ChatApp) DeleteRoom(roomID uint) {
+	activeUsers := ca.chatRoomsList.DeleteRoom(roomID)
+
+	outChannels, err := ca.clientSessionsList.GetOutChannels(activeUsers)
+	if err != nil {
+		return
+	}
+	ca.Broadcast(outChannels, ichatappds.NotificationRoomDeleted{
+		Type:   ichatappds.NOTIFICATION_ROOM_DELETED,
+		RoomID: roomID,
+	})
+}
+
 func (ca *ChatApp) Broadcast(outChannels []ichatappds.ClSessChannelWithID, message interface{}) {
 	deadChannelsList := []uint64{}
 
@@ -267,6 +388,29 @@ func (ca *ChatApp) Broadcast(outChannels []ichatappds.ClSessChannelWithID, messa
 			ca.clientSessionsList.RemoveSessionsByID(deadChannelsList)
 		}
 	}
+}
+
+func ignoreListConflictsFound(userID, targetID uint, username, targetUsername string) bool {
+	target, err := ds.GetUser(targetUsername)
+	if err != nil {
+		return true
+	}
+	for _, u := range target.IgnoreList {
+		if userID == u.ID {
+			return true
+		}
+	}
+	user, err := ds.GetUser(username)
+	if err != nil {
+		return true
+	}
+	for _, u := range user.IgnoreList {
+		if targetID == u.ID {
+			return true
+		}
+	}
+
+	return false
 }
 
 func makeIDGenerator() func() uint {

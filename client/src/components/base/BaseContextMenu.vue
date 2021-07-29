@@ -61,6 +61,7 @@ export default {
   cursor: pointer;
 }
 ul, p {
+  list-style-type: none;
   margin: 0;
   padding: 0;
 }
