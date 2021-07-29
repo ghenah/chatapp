@@ -69,6 +69,9 @@ export default {
   addRoom(context, room) {
     context.commit("addRoom", room);
   },
+  deleteRoom(context, d) {
+    context.commit("deleteRoom", d.roomId);
+  },
   updateUserRoomsInfo(context, roomsList) {
     context.commit(
       "updateUserRoomsInfo",
@@ -140,6 +143,44 @@ export default {
     context.commit("addChatLog", d);
 
     context.commit("removeUserFromChat", d);
+  },
+  inviteUser(context, d) {
+    let wsConn = context.getters["wsConn"];
+    let payload = {
+      method: "inviteUser",
+      data: {
+        inviteeId: d.inviteeId,
+        roomId: d.roomId,
+        inviteeUsername: d.inviteeUsername,
+      },
+    };
+    wsConn.send(JSON.stringify(payload));
+  },
+  startPersonalChat(context, d) {
+    let wsConn = context.getters["wsConn"];
+    let payload = {
+      method: "startPersonalChat",
+      data: {
+        inviteeId: d.userId,
+        inviteeUsername: d.username,
+      },
+    };
+    wsConn.send(JSON.stringify(payload));
+  },
+  addNotificationInvitation(context, d) {
+    context.commit("addNotificationInvitation", d);
+  },
+  acceptInvitation(context, d) {
+    let wsConn = context.getters["wsConn"];
+    let payload = {
+      method: "acceptInvitation",
+      data: {
+        roomId: d.roomId,
+        accepted: d.accepted,
+      },
+    };
+    wsConn.send(JSON.stringify(payload));
+    context.commit("removeNotification", d.invId);
   },
 };
 
