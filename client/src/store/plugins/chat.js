@@ -3,6 +3,8 @@ const NEW_CHAT_MESSAGE = 2;
 const UPDATE_USER_ROOMS_INFO = 3;
 const NOTIFICATION_USER_JOINED_ROOM = 4;
 const NOTIFICATION_USER_LEFT_ROOM = 5;
+const NOTIFICATION_ROOM_INVITATION = 6;
+const NOTIFICATION_ROOM_DELETED = 7;
 
 export default function createWebSocketPlugin() {
   return (store) => {
@@ -55,6 +57,16 @@ export default function createWebSocketPlugin() {
               case NOTIFICATION_USER_LEFT_ROOM:
                 message.type = "userLeft";
                 store.dispatch("chat/removeUserFromChat", message);
+
+                break;
+              case NOTIFICATION_ROOM_INVITATION:
+                message.type = "roomInvitation";
+                store.dispatch("chat/addNotificationInvitation", message);
+
+                break;
+              case NOTIFICATION_ROOM_DELETED:
+                message.type = "roomDeleted";
+                store.dispatch("chat/deleteRoom", message);
 
                 break;
               default:

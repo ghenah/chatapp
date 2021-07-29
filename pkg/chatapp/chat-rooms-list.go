@@ -1,7 +1,6 @@
 package chatapp
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/ghenah/chatapp/pkg/ichatappds"
@@ -19,7 +18,7 @@ type ChatRoomsList struct {
 
 func (crl *ChatRoomsList) NewRoom(userID uint, username string, roomVisibility uint, name string) (uint, map[uint]string, error) {
 	switch roomVisibility {
-	case ichatappds.VISIBILITY_PRIVATE, ichatappds.VISIBILITY_PUBLIC:
+	case ichatappds.VISIBILITY_PRIVATE, ichatappds.VISIBILITY_PUBLIC, ichatappds.VISIBILITY_PERSONAL:
 		room := &ichatappds.ChatRoom{
 			ID:            TEMPORARYgenChatRoomID(),
 			Name:          name,
@@ -51,13 +50,16 @@ func (crl *ChatRoomsList) AddUserToRoom(userID uint, username string, roomID uin
 	}
 
 	// If the room is private, check whether the user has been invited
-	if room.Visibility == ichatappds.VISIBILITY_PRIVATE {
+	if room.Visibility == ichatappds.VISIBILITY_PRIVATE || room.Visibility == ichatappds.VISIBILITY_PERSONAL {
 		if _, present := room.PendingUsers[userID]; !present {
 			return ichatappds.ErrorUserIsNotInvited
 		}
 	}
 
 	room.ActiveUsers[userID] = username
+	// If a user has joined the room by accepting an invitation, clear their
+	// invitee status.
+	delete(room.PendingUsers, userID)
 
 	crl.userActiveRoomsList[userID] = append(crl.userActiveRoomsList[userID], roomID)
 
@@ -76,14 +78,24 @@ func (crl *ChatRoomsList) RemoveUserFromRoom(userID, roomID uint) error {
 	userActiveRooms := crl.userActiveRoomsList[userID]
 	for i, e := range userActiveRooms {
 		if e == roomID {
-			fmt.Println("Removing the room from the user's list") // RRemove
 			crl.userActiveRoomsList[userID] = append(userActiveRooms[:i], userActiveRooms[i+1:]...)
-			fmt.Println("New active rooms list: ", userActiveRooms) // RRemove
 
 			break
 		}
 	}
 
+	return nil
+}
+
+func (crl *ChatRoomsList) RemoveUserFromPending(userID, roomID uint) error {
+	crl.Lock()
+	defer crl.Unlock()
+	room, ok := crl.chatRooms[roomID]
+	if !ok {
+		return ichatappds.ErrorChatRoomDoesNotExist
+	}
+
+	delete(room.PendingUsers, userID)
 	return nil
 }
 
@@ -113,6 +125,17 @@ func (crl *ChatRoomsList) GetRoomInfo(roomID uint) (ichatappds.ChatRoom, error) 
 	}
 
 	return roomOut, nil
+}
+
+func (crl *ChatRoomsList) GetRoomName(roomID uint) (string, error) {
+	crl.Lock()
+	defer crl.Unlock()
+
+	if room, ok := crl.chatRooms[roomID]; ok {
+		return room.Name, nil
+	}
+
+	return "", ichatappds.ErrorChatRoomDoesNotExist
 }
 
 func (crl *ChatRoomsList) GetUserRoomsInfo(userID uint) ([]ichatappds.ChatRoom, error) {
@@ -159,6 +182,85 @@ func (crl *ChatRoomsList) GetAllRoomsInfoShort() ([]ichatappds.ChatRoomShort, er
 	}
 
 	return roomsOut, nil
+}
+
+func (crl *ChatRoomsList) AddInvitee(userID, inviteeID, roomID uint) error {
+	crl.Lock()
+	defer crl.Unlock()
+	room, ok := crl.chatRooms[roomID]
+	if !ok {
+		return ichatappds.ErrorChatRoomDoesNotExist
+	}
+	// The current logic is that the invitation cannot be resent repeatedly or
+	// sent when the user is already an active member of the chat room. Thus,
+	// this check is performed as the first one, regardless of the
+	// room/ownership statuses.
+	if _, present := room.PendingUsers[inviteeID]; present {
+		return ichatappds.ErrorUserAlreadyPending
+	} else if _, present := room.ActiveUsers[inviteeID]; present {
+		return ichatappds.ErrorUserAlreadyActive
+	}
+
+	switch room.Visibility {
+	case ichatappds.VISIBILITY_PUBLIC:
+		room.PendingUsers[inviteeID] = struct{}{}
+		return nil
+	case ichatappds.VISIBILITY_PRIVATE:
+		if userID != room.OwnerID {
+			return ichatappds.ErrorUserNotRoomOwner
+		}
+	case ichatappds.VISIBILITY_PERSONAL:
+		// The app automatically invites the target user to the chat and a personal
+		// chat can only have two parties in it.
+		if userID != room.OwnerID {
+			return ichatappds.ErrorUserNotRoomOwner
+		} else if len(room.PendingUsers) > 0 || len(room.ActiveUsers) == 2 {
+			return ichatappds.ErrorCannotInviteToPersonal
+		}
+
+	}
+
+	room.PendingUsers[inviteeID] = struct{}{}
+	return nil
+}
+
+func (crl *ChatRoomsList) GetRoomVisibility(roomID uint) (uint, error) {
+	crl.Lock()
+	defer crl.Unlock()
+
+	room, ok := crl.chatRooms[roomID]
+	if !ok {
+		return 0, ichatappds.ErrorChatRoomDoesNotExist
+	}
+
+	return room.Visibility, nil
+}
+
+// DeleteRoom deletes a room from the list and returns a list of
+// users that were active at the moment of deletion.
+func (crl *ChatRoomsList) DeleteRoom(roomID uint) []uint {
+	crl.Lock()
+	defer crl.Unlock()
+
+	room, ok := crl.chatRooms[roomID]
+	if !ok {
+		return []uint{}
+	}
+	activeUsersIDs := make([]uint, len(room.ActiveUsers))
+
+	for userID := range room.ActiveUsers {
+		activeUsersIDs = append(activeUsersIDs, userID)
+		userActiveRooms := crl.userActiveRoomsList[userID]
+		for i, e := range userActiveRooms {
+			if e == roomID {
+				crl.userActiveRoomsList[userID] = append(userActiveRooms[:i], userActiveRooms[i+1:]...)
+
+				break
+			}
+		}
+	}
+
+	return activeUsersIDs
 }
 
 // removeRoomReference removes the room ID from the list of rooms

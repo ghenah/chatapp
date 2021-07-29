@@ -18,6 +18,7 @@ type ChatRoomShort struct {
 }
 
 const (
-	VISIBILITY_PUBLIC  uint = 1
-	VISIBILITY_PRIVATE uint = 2
+	VISIBILITY_PUBLIC   uint = 1
+	VISIBILITY_PRIVATE  uint = 2
+	VISIBILITY_PERSONAL uint = 3
 )

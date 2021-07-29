@@ -25,6 +25,10 @@ export default {
     // Initialize the chat room messages list in a separate structure
     state.messageLogs.set(room.id, Array());
   },
+  deleteRoom(state, roomId) {
+    state.roomsList.delete(roomId);
+    state.messageLogs.delete(roomId);
+  },
   removeChatRoom(state, roomId) {
     state.roomsList.delete(roomId);
     state.messageLogs.delete(roomId);
@@ -38,6 +42,10 @@ export default {
     let room = state.roomsList.get(d.roomId);
     room.activeUsers[d.userId] = d.username;
     state.roomsList.set(d.roomId, room);
+  },
+  addNotificationInvitation(state, d) {
+    d.id = generateNotificationId();
+    state.notifications.push(d);
   },
   removeUserFromChat(state, d) {
     let room = state.roomsList.get(d.roomId);
@@ -65,12 +73,19 @@ export default {
     let easyMapper = Array.from(roomsList, (value) => value[1]);
     state.messageLogs = new Map(easyMapper.map((e) => [e.id, Array({})]));
   },
+  removeNotification(state, invId) {
+    console.log("state.notifications:");
+    console.dir(state.notifications);
+    console.log("invId: " + invId);
+    state.notifications = state.notifications.filter((e) => e.id !== invId);
+  },
   saveChatRoomSearchResults(state, chatRoomSearchResults) {
     state.chatRoomSearchResults = chatRoomSearchResults;
   },
   cleanUpSessionInfo(state) {
     state.roomsList = new Map();
     state.messageLogs = new Map();
+    state.notifications = [];
     state.connected = false;
     state.ticket = "";
     state.chatRoomSearchResults = [];
@@ -81,3 +96,10 @@ export default {
     console.log("WSCONN DOWN");
   },
 };
+
+const generateNotificationId = (function() {
+  let id = 1;
+  return function() {
+    return id++;
+  };
+})();

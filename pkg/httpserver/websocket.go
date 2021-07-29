@@ -48,6 +48,19 @@ type mdJoinChatRoom struct {
 type mdLeaveChatRoom struct {
 	RoomID uint `json:"roomId"`
 }
+type mdInviteUser struct {
+	InviteeID       uint   `json:"inviteeId"`
+	InviteeUsername string `json:"inviteeUsername"`
+	RoomID          uint   `json:"roomId"`
+}
+type mdStartPersonalChat struct {
+	InviteeID       uint   `json:"inviteeId"`
+	InviteeUsername string `json:"inviteeUsername"`
+}
+type mdAcceptInvitation struct {
+	RoomId   uint `json:"roomId"`
+	Accepted bool `json:"accepted"`
+}
 
 type WSConnectionHandler struct {
 	ID       uint64
@@ -136,6 +149,39 @@ func (h *WSConnectionHandler) read() {
 			}
 
 			go ca.LeaveChatRoom(h.userID, data.RoomID)
+		case "inviteUser":
+			data := &mdInviteUser{}
+			err = json.Unmarshal(messageDec.Data, data)
+			if err != nil {
+				fmt.Println("unmarshalling inviteUser.Data: ", err.Error())
+				h.conn.Close()
+
+				continue
+			}
+
+			go ca.InviteUser(h.userID, data.InviteeID, data.RoomID, h.username, data.InviteeUsername)
+		case "acceptInvitation":
+			data := &mdAcceptInvitation{}
+			err = json.Unmarshal(messageDec.Data, data)
+			if err != nil {
+				fmt.Println("unmarshalling acceptInvitation.Data: ", err.Error())
+				h.conn.Close()
+
+				continue
+			}
+
+			go ca.AcceptInvitation(h.userID, h.username, data.RoomId, data.Accepted)
+		case "startPersonalChat":
+			data := &mdStartPersonalChat{}
+			err = json.Unmarshal(messageDec.Data, data)
+			if err != nil {
+				fmt.Println("unmarshalling startPersonalChat.Data: ", err.Error())
+				h.conn.Close()
+
+				continue
+			}
+
+			go ca.StartPersonalChat(h.userID, h.username, data.InviteeID, data.InviteeUsername)
 		default:
 			fmt.Println("ws connection handler: non-protocol message")
 		}
@@ -170,7 +216,7 @@ func (h *WSConnectionHandler) write() {
 			fmt.Printf("User: %s, ClConnID: %d, Message: %v\n", h.username, h.ID, message) // RRemove
 
 			switch message.(type) {
-			case ichatappds.NewChatMessage, ichatappds.NotificationNewRoom, ichatappds.UpdateUserRoomsInfo, ichatappds.NotificationUserJoinedRoom, ichatappds.NotificationUserLeftRoom:
+			case ichatappds.NewChatMessage, ichatappds.NotificationNewRoom, ichatappds.UpdateUserRoomsInfo, ichatappds.NotificationUserJoinedRoom, ichatappds.NotificationUserLeftRoom, ichatappds.NotificationRoomInvitation, ichatappds.NotificationRoomDeleted:
 				wsOutMessage, err = json.Marshal(message)
 				if err != nil {
 					continue
