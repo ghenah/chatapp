@@ -27,6 +27,10 @@ func userRegister(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	if err = reqData.Validate(); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(reqData.Password), 12)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -61,7 +65,11 @@ func userAuthencticate(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	// Validate the user login details
+	if err = reqData.Validate(); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// Verify the user login details
 	userPassword, err := ds.GetUserPassword(reqData.Username)
 	if err != nil {
 		if err == idatastore.ErrorUserNotFound {
@@ -162,6 +170,10 @@ func userFriendAdd(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	if err = reqData.Validate(); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	// A user cannot add themselves to the friends list.
 	if reqData.UserID == reqData.FriendID {
 		return writeResponse(c, ResponseSuccess{Success: true})
@@ -201,6 +213,10 @@ func userFriendRemove(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	if err = reqData.Validate(); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	// Make sure the UserID belongs to the authenticated user (the owner of
 	// the JWT)
 	u := c.Get("user").(*jwt.Token)
@@ -231,6 +247,10 @@ func userFriendRemove(c echo.Context) (err error) {
 func userIgnoredAdd(c echo.Context) (err error) {
 	reqData := &RequestAddUserToList{}
 	if err = c.Bind(reqData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err = reqData.Validate(); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -271,6 +291,10 @@ func userIgnoredRemove(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	if err = reqData.Validate(); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	// Make sure the UserID belongs to the authenticated user (the owner of
 	// the JWT)
 	u := c.Get("user").(*jwt.Token)
@@ -301,6 +325,10 @@ func userIgnoredRemove(c echo.Context) (err error) {
 func userUpdatePassword(c echo.Context) (err error) {
 	reqData := &RequestUserUpdatePassword{}
 	if err = c.Bind(reqData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err = reqData.Validate(); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -352,6 +380,10 @@ func userUpdatePassword(c echo.Context) (err error) {
 func userUpdateUsername(c echo.Context) (err error) {
 	reqData := &RequestUserUpdateUsername{}
 	if err = c.Bind(reqData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err = reqData.Validate(); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 

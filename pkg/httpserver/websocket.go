@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/ghenah/chatapp/pkg/ichatappds"
+	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/gorilla/websocket"
 )
 
@@ -53,6 +55,15 @@ type mdInviteUser struct {
 	InviteeUsername string `json:"inviteeUsername"`
 	RoomID          uint   `json:"roomId"`
 }
+
+func (req mdInviteUser) Validate() error {
+	return validation.ValidateStruct(&req,
+		validation.Field(&req.InviteeID, validation.Required),
+		validation.Field(&req.InviteeUsername, validation.Required, validation.Match(regexp.MustCompile("^[A-Za-z]{1}[A-Za-z0-9]{1,15}$"))),
+		validation.Field(&req.RoomID, validation.Required),
+	)
+}
+
 type mdStartPersonalChat struct {
 	InviteeID       uint   `json:"inviteeId"`
 	InviteeUsername string `json:"inviteeUsername"`
@@ -154,6 +165,12 @@ func (h *WSConnectionHandler) read() {
 			err = json.Unmarshal(messageDec.Data, data)
 			if err != nil {
 				fmt.Println("unmarshalling inviteUser.Data: ", err.Error())
+				h.conn.Close()
+
+				continue
+			}
+			if err = data.Validate(); err != nil {
+				fmt.Println("inviteUser.Data: ", err.Error())
 				h.conn.Close()
 
 				continue
