@@ -6,18 +6,26 @@ var address = schema + domain + ":" + port;
 export default {
   getTicket(context) {
     return new Promise((resolve, reject) => {
-      let accessToken = context.rootGetters["user/accessToken"];
-      sendRequest(address + "/api/v1/chat/ticket", "GET", {
-        Authorization: "Bearer " + accessToken,
-      }).then((response) => {
-        if (response.status.ok) {
-          context.commit("saveTicket", response.data.wsTicket);
+      context
+        .dispatch("user/getAccessToken", null, {
+          root: true,
+        })
+        .then((accessToken) => {
+          sendRequest(address + "/api/v1/chat/ticket", "GET", {
+            Authorization: "Bearer " + accessToken,
+          }).then((response) => {
+            if (response.status.ok) {
+              context.commit("saveTicket", response.data.wsTicket);
 
-          resolve();
-        } else {
-          reject(response.data.message);
-        }
-      });
+              resolve();
+            } else {
+              reject(response.data.message);
+            }
+          });
+        })
+        .catch((e) => {
+          console.log(e);
+        });
     });
   },
   openWS(context) {
@@ -43,20 +51,28 @@ export default {
     wsConn.send(JSON.stringify(payload));
   },
   searchChatRooms(context) {
-    let accessToken = context.rootGetters["user/accessToken"];
-    sendRequest(address + "/api/v1/chat/rooms/search", "GET", {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + accessToken,
-    }).then((response) => {
-      if (response.status.ok) {
-        context.commit(
-          "saveChatRoomSearchResults",
-          response.data.chatRoomsList
-        );
-      } else {
-        console.log(response.data.message);
-      }
-    });
+    context
+      .dispatch("user/getAccessToken", null, {
+        root: true,
+      })
+      .then((accessToken) => {
+        sendRequest(address + "/api/v1/chat/rooms/search", "GET", {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + accessToken,
+        }).then((response) => {
+          if (response.status.ok) {
+            context.commit(
+              "saveChatRoomSearchResults",
+              response.data.chatRoomsList
+            );
+          } else {
+            console.log(response.data.message);
+          }
+        });
+      })
+      .catch((e) => {
+        console.log(e);
+      });
   },
   newRoom(context, d) {
     let wsConn = context.getters["wsConn"];

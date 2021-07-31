@@ -48,13 +48,14 @@ func main() {
 
 	// Start the HTTP server
 	serverConfig := httpserver.ServerConfig{
-		AppAddressHostname:    os.Getenv("APP_ADDRESS_HOSTNAME"),
-		AppAddressPort:        os.Getenv("APP_ADDRESS_PORT"),
-		JWTSecretKey:          os.Getenv("APP_JWT_SECRET_KEY"),
-		JWTWebSocketSecretKey: os.Getenv("APP_JWT_WEB_SOCKET_SECRET_KEY"),
-		AppWsOriginSchema:     os.Getenv("APP_WS_ORIGIN_SCHEMA"),
-		AppWsOriginDomain:     os.Getenv("APP_WS_ORIGIN_DOMAIN"),
-		AppWsOriginPort:       os.Getenv("APP_WS_ORIGIN_PORT"),
+		AppAddressHostname:       os.Getenv("APP_ADDRESS_HOSTNAME"),
+		AppAddressPort:           os.Getenv("APP_ADDRESS_PORT"),
+		JWTSecretKey:             os.Getenv("APP_JWT_SECRET_KEY"),
+		JWTRefreshTokenSecretKey: os.Getenv("APP_JWT_REFRESH_TOKEN_SECRET_KEY"),
+		JWTWebSocketSecretKey:    os.Getenv("APP_JWT_WEB_SOCKET_SECRET_KEY"),
+		AppWsOriginSchema:        os.Getenv("APP_WS_ORIGIN_SCHEMA"),
+		AppWsOriginDomain:        os.Getenv("APP_WS_ORIGIN_DOMAIN"),
+		AppWsOriginPort:          os.Getenv("APP_WS_ORIGIN_PORT"),
 		// Pass the data store handle
 		DS:      dsgorm.GetDataStore(),
 		ChatApp: chatApp,

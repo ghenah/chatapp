@@ -7,12 +7,16 @@ import (
 )
 
 var (
-	jwtSecretKey          string
-	jwtWebSocketSecretKey string
+	jwtSecretKey             string
+	jwtRefreshTokenSecretKey string
+	jwtWebSocketSecretKey    string
 )
 
 func getJWTSecret() string {
 	return jwtSecretKey
+}
+func getRefreshTokenSecret() string {
+	return jwtRefreshTokenSecretKey
 }
 func getJWTWebSocketSecret() string {
 	return jwtSecretKey
@@ -27,13 +31,25 @@ type Claims struct {
 // generateUserSession given the ID and the username of a user, returns
 // an access token and an error
 func generateUserSession(userID uint, username string) (string, error) {
-	expirationTime := time.Now().Add(15 * time.Minute)
+	expirationTime := time.Now().Add(10 * time.Second)
 	accessToken, err := generateAccessToken(userID, username, expirationTime, []byte(getJWTSecret()))
 	if err != nil {
 		return "", err
 	}
 
 	return accessToken, nil
+}
+
+// generateRefreshToken given the ID and the username of a user, returns
+// an access token and an error
+func generateRefreshToken(userID uint, username string) (string, error) {
+	expirationTime := time.Now().Add(72 * time.Hour)
+	refreshToken, err := generateAccessToken(userID, username, expirationTime, []byte(getRefreshTokenSecret()))
+	if err != nil {
+		return "", err
+	}
+
+	return refreshToken, nil
 }
 
 // generateWebSocketTIcket given the ID and the username of a user, returns

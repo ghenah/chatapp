@@ -94,6 +94,19 @@ func userAuthencticate(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
 	}
 
+	// Generate a refresh token
+	refreshToken, err := generateRefreshToken(userInfo.ID, userInfo.Username)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	cookie := new(http.Cookie)
+	cookie.Name = "refreshToken"
+	cookie.Value = refreshToken
+	cookie.Path = "/refresh-token"
+	cookie.HttpOnly = true
+	c.SetCookie(cookie)
+
 	return writeResponse(c, ResponseAuthSuccess{
 		User:        userInfo,
 		AccessToken: accessToken,
@@ -471,6 +484,48 @@ func chatGetWSTicket(c echo.Context) (err error) {
 
 	return writeResponse(c, ResponseWSTicket{
 		WSTicket: ticket,
+	})
+}
+
+// refreshAccessToken
+// @Summary Refresh the access token.
+// @Description Refresh the access token using the refresh token from the
+// @Description Http-Only cookie.
+// @Tags refresh-token
+// @Produce json
+// @Success 200 {object} ResponseATRefreshSuccess
+// @Failure 500
+// @Router /refresh-token [get]
+func refreshAccessToken(c echo.Context) (err error) {
+	// Take the user details out of the access token
+	// u := c.Get("user").(*jwt.Token)
+	// claims := u.Claims.(*Claims)
+
+	// Generate a new access token
+	userInfo, err := ds.GetUser("Jack")
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+	accessToken, err := generateUserSession(userInfo.ID, userInfo.Username)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	// Generate a new refresh token as well
+	refreshToken, err := generateRefreshToken(userInfo.ID, userInfo.Username)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	cookie := new(http.Cookie)
+	cookie.Name = "refreshToken"
+	cookie.Value = refreshToken
+	cookie.Path = "/refresh-token"
+	cookie.HttpOnly = true
+	c.SetCookie(cookie)
+
+	return writeResponse(c, ResponseATRefreshSuccess{
+		AccessToken: accessToken,
 	})
 }
 

@@ -14,6 +14,10 @@ type ResponseAuthSuccess struct {
 	AccessToken string `json:"accessToken"`
 }
 
+type ResponseATRefreshSuccess struct {
+	AccessToken string `json:"accessToken"`
+}
+
 type ResponseWSTicket struct {
 	WSTicket string `json:"wsTicket"`
 }
