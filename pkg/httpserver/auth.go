@@ -31,7 +31,7 @@ type Claims struct {
 // generateUserSession given the ID and the username of a user, returns
 // an access token and an error
 func generateUserSession(userID uint, username string) (string, error) {
-	expirationTime := time.Now().Add(10 * time.Second)
+	expirationTime := time.Now().Add(3 * time.Minute)
 	accessToken, err := generateAccessToken(userID, username, expirationTime, []byte(getJWTSecret()))
 	if err != nil {
 		return "", err
