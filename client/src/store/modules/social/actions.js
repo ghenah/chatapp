@@ -5,17 +5,25 @@ var address = schema + domain + ":" + port;
 
 export default {
   searchUsers(context) {
-    let accessToken = context.rootGetters["user/accessToken"];
-    sendRequest(address + "/api/v1/users/search", "GET", {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + accessToken,
-    }).then((response) => {
-      if (response.status.ok) {
-        context.commit("saveUserSearchResults", response.data.usersList);
-      } else {
-        console.log(response.data.message);
-      }
-    });
+    context
+      .dispatch("user/getAccessToken", null, {
+        root: true,
+      })
+      .then((accessToken) => {
+        sendRequest(address + "/api/v1/users/search", "GET", {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + accessToken,
+        }).then((response) => {
+          if (response.status.ok) {
+            context.commit("saveUserSearchResults", response.data.usersList);
+          } else {
+            console.log(response.data.message);
+          }
+        });
+      })
+      .catch((e) => {
+        console.log(e);
+      });
   },
 };
 

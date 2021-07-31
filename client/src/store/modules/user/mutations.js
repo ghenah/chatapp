@@ -8,6 +8,9 @@ export default {
     state.friendsList = userSession.friendsList;
     state.ignoreList = userSession.ignoreList;
   },
+  updateAccessToken(state, data) {
+    state.accessToken = data.accessToken;
+  },
   clearUserSession(state) {
     state.loggedIn = false;
     state.accessToken = "";
