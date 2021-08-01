@@ -294,6 +294,35 @@ export default {
         });
     });
   },
+  changeProfilePicture(context, d) {
+    context
+      .dispatch("user/getAccessToken", null, {
+        root: true,
+      })
+      .then((accessToken) => {
+        sendRequest(
+          address + "/api/v1/users/update/profile-picture",
+          "POST",
+          {
+            Authorization: "Bearer " + accessToken,
+          },
+          d.formData
+        )
+          .then((response) => {
+            if (response.status.ok) {
+              context.commit("updateProfilePicture", response.data);
+            } else {
+              console.log("profile picture udpate failed");
+            }
+          })
+          .catch((e) => {
+            console.log(e);
+          });
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+  },
 };
 
 function decodeJwt(token) {
@@ -320,10 +349,15 @@ function assertAlive(decoded) {
 }
 
 async function sendRequest(url, method, headers, body) {
+  // Do not convert FormData to JSON
+  if (!(body instanceof FormData)) {
+    body = JSON.stringify(body);
+  }
+
   let response = await fetch(url, {
     method,
     headers,
-    body: JSON.stringify(body),
+    body,
   });
 
   let output = {

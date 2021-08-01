@@ -15,6 +15,7 @@ export default {
       activeRoomId: 0,
       messageLogs: new Map(),
       roomsList: new Map(),
+      userProfilePics: new Map(),
       notifications: [],
       roomVisPublic: CHAT_ROOM_VISIBILITY_PUBLIC,
       roomVisPrivate: CHAT_ROOM_VISIBILITY_PRIVATE,

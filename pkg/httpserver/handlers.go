@@ -1,7 +1,12 @@
 package httpserver
 
 import (
+	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/ghenah/chatapp/pkg/idatastore"
@@ -36,7 +41,9 @@ func userRegister(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	err = ds.CreateUser(reqData.Username, reqData.Email, string(hashedPassword))
+	defaultUserProfilePicture := "default.jpeg"
+
+	err = ds.CreateUser(reqData.Username, reqData.Email, string(hashedPassword), defaultUserProfilePicture)
 	if err != nil {
 		if err == idatastore.ErrorDuplicateEntry {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -529,6 +536,61 @@ func refreshAccessToken(c echo.Context) (err error) {
 	})
 }
 
+func userProfileImageUpload(c echo.Context) error {
+	// Get the user info from the access token.
+	u := c.Get("user").(*jwt.Token)
+	claims := u.Claims.(*Claims)
+
+	profilePic, err := c.FormFile("profilePic")
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	src, err := profilePic.Open()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+	defer src.Close()
+
+	imageExtension, err := getImageExtension(&src)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	// Generate the image name
+	profilePicsDir := "images/profile/"
+	newPictureName := fmt.Sprintf("%d-%d.%s", claims.UserID, time.Now().UnixNano(), imageExtension)
+	path := profilePicsDir + newPictureName
+
+	dst, err := os.Create(path)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+	defer dst.Close()
+
+	if _, err = io.Copy(dst, src); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	// Swap the old picture for the new one
+	userInfo, err := ds.GetUser(claims.Username)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	ds.UpdateProfilePicture(claims.UserID, newPictureName)
+	if userInfo.Picture != "default.jpeg" {
+		err = os.Remove(profilePicsDir + userInfo.Picture)
+		if err != nil {
+			fmt.Println("remove old profile picture:" + err.Error())
+		}
+	}
+
+	return writeResponse(c, struct {
+		PictureName string `json:"pictureName"`
+	}{PictureName: newPictureName})
+}
+
 // chatConnectionInit performs the necessary chat initialization steps
 // when a user upgrades their connection to WebSocket.
 func chatConnectionInit(c echo.Context) (err error) {
@@ -536,12 +598,41 @@ func chatConnectionInit(c echo.Context) (err error) {
 	ticket := c.Get("ticket").(*jwt.Token)
 	claims := ticket.Claims.(*Claims)
 
-	err = serveConnection(c.Response(), c.Request(), ca.InMsgQueue, claims.UserID, claims.Username)
+	userInfo, err := ds.GetUser(claims.Username)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+	}
+
+	err = serveConnection(c.Response(), c.Request(), ca.InMsgQueue, claims.UserID, claims.Username, userInfo.Picture)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
 	return nil
+}
+
+// getImageExtension provides the file extension based on the MIME type.
+// Currently, the supported MIME types are image/jpeg, image/png, and
+// image/gif. Returns a file extension and an error
+func getImageExtension(file *multipart.File) (string, error) {
+	fileHeader := make([]byte, 512)
+	if _, err := (*file).Read(fileHeader); err != nil {
+		return "", nil
+	}
+	if _, err := (*file).Seek(0, 0); err != nil {
+		return "", nil
+	}
+
+	MIMEType := http.DetectContentType(fileHeader)
+	MIMETypes := map[string]string{"image/jpeg": "jpeg", "image/png": "png", "image/gif": "gif"}
+	for t, ext := range MIMETypes {
+		if MIMEType == t {
+			return ext, nil
+		}
+	}
+
+	// extension was not found
+	return "", nil
 }
 
 // writeResponse writes the response in the format specified in the

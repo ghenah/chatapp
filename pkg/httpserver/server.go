@@ -99,6 +99,7 @@ func setUpRouter() {
 	protected.GET("/users/profile", getAuthenticatedUserInfo)
 	protected.PUT("/users/update/password", userUpdatePassword)
 	protected.PUT("/users/update/username", userUpdateUsername)
+	protected.POST("/users/update/profile-picture", userProfileImageUpload)
 
 	// chat
 	protected.GET("/chat/ticket", chatGetWSTicket)
@@ -115,4 +116,6 @@ func setUpRouter() {
 	wsProtected.GET("/connect", chatConnectionInit)
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
+
+	e.Static("/images/profile", "images/profile")
 }

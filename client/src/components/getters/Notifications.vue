@@ -12,7 +12,6 @@
 export default {
   computed: {
     notifications() {
-      console.log(this.$store.getters["chat/notifications"]);
       return this.$store.getters["chat/notifications"];
     }
   }

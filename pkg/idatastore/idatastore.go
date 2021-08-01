@@ -3,7 +3,7 @@ package idatastore
 type IDataStore interface {
 	// CreateUser creates a new user entry in the data storage. Unique and valid
 	// username and email address must be provided. Returns an error.
-	CreateUser(username, email, password string) error
+	CreateUser(username, email, password, picture string) error
 
 	// GetUser returns a user corresponding to the provided ID and an error.
 	GetUser(username string) (User, error)
@@ -39,4 +39,7 @@ type IDataStore interface {
 
 	// UpdateUsername updates the username. Returns an error.
 	UpdateUsername(userID uint, newUsername string) error
+
+	// UpdateProfilePicture updates the password of the user. Returns an error.
+	UpdateProfilePicture(userID uint, picture string) error
 }

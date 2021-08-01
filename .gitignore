@@ -3,6 +3,11 @@
 client/node_modules
 
 bin/
+images/*
+!images/profile/
+
+images/profile/*
+!images/profile/default.jpeg
 
 .vscode/
 .devcontainer/

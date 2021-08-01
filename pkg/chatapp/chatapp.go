@@ -10,6 +10,7 @@ type ChatApp struct {
 	InMsgQueue         chan ichatappds.ChatMessage
 	clientSessionsList ichatappds.ClientSessionsList
 	chatRoomsList      ichatappds.ChatRoomsList
+	profilePictures    ichatappds.ProfilePictures
 }
 
 func (ca *ChatApp) Start() {
@@ -54,7 +55,9 @@ func (ca *ChatApp) Start() {
 	}
 }
 
-func (ca *ChatApp) RegisterClientSession(userID uint, username string, outCh chan interface{}) (uint64, error) {
+func (ca *ChatApp) RegisterClientSession(userID uint, username string, picture string, outCh chan interface{}) (uint64, error) {
+	ca.profilePictures.UpdatePicture(userID, picture)
+
 	sessionID, err := ca.clientSessionsList.AddSession(userID, username, outCh)
 	if err != nil {
 		return 0, err
@@ -74,14 +77,27 @@ func (ca *ChatApp) GetUserRoomsInfo(userID uint) {
 		return
 	}
 
+	// Compile the list of all users that are present in the current
+	// user's active chats
+	profilePictures := map[uint]string{}
+	for _, room := range userRoomsInfo {
+		for id := range room.ActiveUsers {
+			profilePictures[id] = ""
+		}
+	}
+
+	// Add a profile pictures [names] that are present in the list
+	ca.profilePictures.GetPicturesList(profilePictures)
+
 	outChannels, err := ca.clientSessionsList.GetOutChannels([]uint{userID})
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 	ca.Broadcast(outChannels, ichatappds.UpdateUserRoomsInfo{
-		Type:      ichatappds.UPDATE_USER_ROOMS_INFO,
-		RoomsList: userRoomsInfo,
+		Type:        ichatappds.UPDATE_USER_ROOMS_INFO,
+		RoomsList:   userRoomsInfo,
+		ProfilePics: profilePictures,
 	})
 }
 
@@ -119,6 +135,7 @@ func (ca *ChatApp) CreateChatRoom(userID uint, username string, roomVisibility u
 		Name:        name,
 		ID:          roomID,
 		ActiveUsers: activeUsers,
+		ProfilePics: map[uint]string{},
 	})
 
 	return nil
@@ -190,6 +207,16 @@ func (ca *ChatApp) JoinChatRoom(userID uint, username string, roomID uint) {
 		return
 	}
 
+	// Compile the list of all the active users in the room the user
+	// is joining
+	profilePictures := map[uint]string{}
+	for id := range room.ActiveUsers {
+		profilePictures[id] = ""
+	}
+
+	// Add a profile pictures [names] that are present in the list
+	ca.profilePictures.GetPicturesList(profilePictures)
+
 	// "Broadcast" the new room to all user's clients (the user who just joined).
 	userOutChannel, err := ca.clientSessionsList.GetOutChannels([]uint{userID})
 	if err != nil {
@@ -200,9 +227,14 @@ func (ca *ChatApp) JoinChatRoom(userID uint, username string, roomID uint) {
 		Name:        room.Name,
 		ID:          room.ID,
 		ActiveUsers: room.ActiveUsers,
+		ProfilePics: profilePictures,
 	})
 
 	// The room's active users must be updated with the "new user" notification
+
+	// Fetching the profile image of the new user
+	usersPicturesList := map[uint]string{userID: ""}
+	ca.profilePictures.GetPicturesList(usersPicturesList)
 
 	// Extracting IDs of all room's active users
 	activeUsers := make([]uint, len(room.ActiveUsers))
@@ -220,6 +252,7 @@ func (ca *ChatApp) JoinChatRoom(userID uint, username string, roomID uint) {
 		RoomID:   room.ID,
 		UserID:   userID,
 		Username: username,
+		Picture:  usersPicturesList[userID],
 	})
 
 }

@@ -10,6 +10,7 @@ export default {
       accessToken: window.localStorage.getItem("accessToken") || "",
       id: 0,
       username: "",
+      profilePicture: "",
       email: "",
       friendsList: [],
       ignoreList: [],
