@@ -28,6 +28,10 @@ export default function createWebSocketPlugin() {
             let message = JSON.parse(e.data);
             switch (message.type) {
               case NOTIFICATION_NEW_ROOM:
+                store.dispatch(
+                  "chat/updateUserProfilePics",
+                  message.profilePics
+                );
                 store.dispatch("chat/addRoom", {
                   id: message.id,
                   name: message.name,
@@ -41,6 +45,10 @@ export default function createWebSocketPlugin() {
 
                 break;
               case UPDATE_USER_ROOMS_INFO:
+                store.dispatch(
+                  "chat/updateUserProfilePics",
+                  message.profilePics
+                );
                 store.dispatch("chat/updateUserRoomsInfo", message.roomsList);
 
                 break;
@@ -51,6 +59,7 @@ export default function createWebSocketPlugin() {
                   roomId: message.roomId,
                   userId: message.userId,
                   username: message.username,
+                  picture: message.picture,
                 });
 
                 break;
@@ -76,8 +85,6 @@ export default function createWebSocketPlugin() {
             console.log(
               "Error: websocket message parsing to JSON: " + err.message
             );
-            console.dir(e);
-            console.log("message data: " + e.data);
           }
         };
       }

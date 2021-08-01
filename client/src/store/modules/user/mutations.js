@@ -4,6 +4,7 @@ export default {
     state.accessToken = userSession.accessToken;
     state.id = userSession.id;
     state.username = userSession.username;
+    state.profilePicture = userSession.picture;
     state.email = userSession.email;
     state.friendsList = userSession.friendsList;
     state.ignoreList = userSession.ignoreList;
@@ -28,6 +29,9 @@ export default {
   },
   updateUsername(state, username) {
     state.username = username;
+  },
+  updateProfilePicture(state, d) {
+    state.profilePicture = d.pictureName;
   },
   addFriend(state, friend) {
     if (notInList(state.friendsList, friend)) {

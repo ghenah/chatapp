@@ -88,6 +88,13 @@ export default {
   deleteRoom(context, d) {
     context.commit("deleteRoom", d.roomId);
   },
+  updateUserProfilePics(context, profilePics) {
+    context.commit("updateUserProfilePics", profilePics);
+    context.commit("updateUserProfilePicture", {
+      userId: context.rootGetters["user/userId"],
+      picture: context.rootGetters["user/profilePicture"],
+    });
+  },
   updateUserRoomsInfo(context, roomsList) {
     context.commit(
       "updateUserRoomsInfo",
@@ -132,10 +139,13 @@ export default {
     wsConn.send(JSON.stringify(payload));
   },
   addUserToChat(context, d) {
+    context.commit("updateUserProfilePicture", {
+      userId: d.userId,
+      picture: d.picture,
+    });
     context.commit("addUserToChat", d);
     let ignoreList = context.rootGetters["user/ignoreList"];
     for (const e of ignoreList) {
-      console.dir(e);
       if (e.id === d.userId) {
         return;
       }

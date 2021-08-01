@@ -274,7 +274,7 @@ func (h *WSConnectionHandler) write() {
 	}
 }
 
-func serveConnection(w http.ResponseWriter, r *http.Request, in chan ichatappds.ChatMessage, userID uint, username string) error {
+func serveConnection(w http.ResponseWriter, r *http.Request, in chan ichatappds.ChatMessage, userID uint, username, picture string) error {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -283,7 +283,7 @@ func serveConnection(w http.ResponseWriter, r *http.Request, in chan ichatappds.
 
 	outCh := make(chan interface{}, 64)
 
-	sessionID, err := ca.RegisterClientSession(userID, username, outCh)
+	sessionID, err := ca.RegisterClientSession(userID, username, picture, outCh)
 	if err != nil {
 		fmt.Println(err.Error())
 		return err

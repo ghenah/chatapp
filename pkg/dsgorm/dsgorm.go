@@ -18,8 +18,8 @@ func GetDataStore() *DataStoreGORM {
 
 // CreateUser creates a new user entry in the data storage. Unique and valid
 // username and email address must be provided. Returns an error.
-func (ds *DataStoreGORM) CreateUser(username, email, password string) error {
-	userData := User{Username: username, Email: email, Password: password}
+func (ds *DataStoreGORM) CreateUser(username, email, password, picture string) error {
+	userData := User{Username: username, Email: email, Password: password, Picture: picture}
 
 	result := ds.db.Create(&userData)
 	if result.Error != nil {
@@ -50,6 +50,7 @@ func (ds *DataStoreGORM) GetUser(username string) (idatastore.User, error) {
 	userOut := idatastore.User{
 		ID:          userResult.ID,
 		Username:    userResult.Username,
+		Picture:     userResult.Picture,
 		Email:       userResult.Email,
 		RegDate:     userResult.RegDate,
 		FriendsList: []idatastore.UserShort{},
@@ -212,6 +213,24 @@ func (ds *DataStoreGORM) UpdateUsername(userID uint, username string) error {
 		default:
 			return result.Error
 		}
+	}
+	if result.RowsAffected == 0 {
+		return idatastore.ErrorUserNotFound
+	}
+
+	return nil
+}
+
+// UpdateProfilePicture updates the password of the user. Returns an error.
+func (ds *DataStoreGORM) UpdateProfilePicture(userID uint, picture string) error {
+	userData := User{
+		ID:      userID,
+		Picture: picture,
+	}
+
+	result := ds.db.Model(&userData).Updates(userData)
+	if result.Error != nil {
+		return result.Error
 	}
 	if result.RowsAffected == 0 {
 		return idatastore.ErrorUserNotFound
