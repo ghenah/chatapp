@@ -21,7 +21,6 @@
           <li v-for="room in rooms" :key="room.id">
             <div @click="onChatRoomSelected(room.id)" @contextmenu.prevent="onChatRoomCM($event, room.id, room.name)" :class="{'room-name-active': room.id === activeRoomId}" class="room-name">{{room.name}}</div>
             <ul v-if="room.id === activeRoomId">
-              <!-- <li v-for="username, userId in room.activeUsers" :key="userId" class="users-list-item">{{username}}</li> -->
               <li v-for="username, userId in room.activeUsers" :key="userId" class="users-list-item">
                 <img :src="profilePics.get(userId)" alt="Profile picture" class="profile-pic-micro">
                 {{username}}</li>
