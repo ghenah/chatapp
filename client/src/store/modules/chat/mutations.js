@@ -66,6 +66,20 @@ export default {
   setActiveChatRoom(state, roomId) {
     state.activeRoomId = roomId;
   },
+  updateUserProfilePics(state, profilePics) {
+    for (const userId in profilePics) {
+      state.userProfilePics.set(
+        userId,
+        "/images/profile/" + profilePics[userId]
+      );
+    }
+  },
+  updateUserProfilePicture(state, d) {
+    state.userProfilePics.set(
+      d.userId.toString(),
+      "/images/profile/" + d.picture
+    );
+  },
   updateUserRoomsInfo(state, roomsList) {
     state.roomsList = roomsList;
 
@@ -85,6 +99,7 @@ export default {
   cleanUpSessionInfo(state) {
     state.roomsList = new Map();
     state.messageLogs = new Map();
+    state.userProfilePics = new Map();
     state.notifications = [];
     state.connected = false;
     state.ticket = "";
@@ -93,7 +108,6 @@ export default {
       state.wsConn.close();
     }
     state.wsConn = null;
-    console.log("WSCONN DOWN");
   },
 };
 

@@ -4,6 +4,29 @@ var port = process.env.VUE_APP_PORT;
 var address = schema + domain + ":" + port;
 
 export default {
+  getAccessToken(context) {
+    return new Promise((resolve, reject) => {
+      let accessToken = context.getters["accessToken"];
+
+      try {
+        assertAlive(decodeJwt(accessToken));
+        resolve(accessToken);
+      } catch (error) {
+        sendRequest(address + "/refresh-token")
+          .then((response) => {
+            if (response.status.ok) {
+              context.commit("updateAccessToken", response.data);
+              resolve(context.getters["accessToken"]);
+            } else {
+              reject("could not refresh the access token");
+            }
+          })
+          .catch((e) => {
+            reject(e);
+          });
+      }
+    });
+  },
   login(context, data) {
     return new Promise((resolve, reject) => {
       sendRequest(
@@ -58,7 +81,8 @@ export default {
   },
   getProfileInfo(context) {
     return new Promise((resolve, reject) => {
-      let accessToken = context.getters["accessToken"];
+      // let accessToken = context.getters["accessToken"];
+      let accessToken = context.dispatch("getAccessToken");
       sendRequest(address + "/api/v1/users/profile", "GET", {
         "Content-Type": "application/json",
         Authorization: "Bearer " + accessToken,
@@ -78,156 +102,262 @@ export default {
   },
   addFriend(context, friend) {
     let userId = context.getters["userId"];
-    let accessToken = context.getters["accessToken"];
-    sendRequest(
-      address + "/api/v1/users/friends",
-      "POST",
-      {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + accessToken,
-      },
-      {
-        userId: userId,
-        friendId: friend.id,
-      }
-    ).then((response) => {
-      if (response.status.ok) {
-        context.commit("addFriend", friend);
-      } else {
-        console.log(response.data.message);
-      }
-    });
+    context
+      .dispatch("user/getAccessToken", null, {
+        root: true,
+      })
+      .then((accessToken) => {
+        sendRequest(
+          address + "/api/v1/users/friends",
+          "POST",
+          {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + accessToken,
+          },
+          {
+            userId: userId,
+            friendId: friend.id,
+          }
+        ).then((response) => {
+          if (response.status.ok) {
+            context.commit("addFriend", friend);
+          } else {
+            console.log(response.data.message);
+          }
+        });
+      })
+      .catch((e) => {
+        console.log(e);
+      });
   },
   ignoreUser(context, ignoredUser) {
     let userId = context.getters["userId"];
-    let accessToken = context.getters["accessToken"];
-    sendRequest(
-      address + "/api/v1/users/ignored",
-      "POST",
-      {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + accessToken,
-      },
-      {
-        userId: userId,
-        friendId: ignoredUser.id,
-      }
-    ).then((response) => {
-      if (response.status.ok) {
-        context.commit("addIgnoredUser", ignoredUser);
-        context.commit("removeFriend", ignoredUser.id);
-      } else {
-        console.log(response.data.message);
-      }
-    });
+    context
+      .dispatch("user/getAccessToken", null, {
+        root: true,
+      })
+      .then((accessToken) => {
+        sendRequest(
+          address + "/api/v1/users/ignored",
+          "POST",
+          {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + accessToken,
+          },
+          {
+            userId: userId,
+            friendId: ignoredUser.id,
+          }
+        ).then((response) => {
+          if (response.status.ok) {
+            context.commit("addIgnoredUser", ignoredUser);
+            context.commit("removeFriend", ignoredUser.id);
+          } else {
+            console.log(response.data.message);
+          }
+        });
+      })
+      .catch((e) => {
+        console.log(e);
+      });
   },
   removeFriend(context, friendId) {
     let userId = context.getters["userId"];
-    let accessToken = context.getters["accessToken"];
-    sendRequest(
-      address + "/api/v1/users/friends",
-      "DELETE",
-      {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + accessToken,
-      },
-      {
-        userId: userId,
-        friendId: friendId,
-      }
-    ).then((response) => {
-      if (response.status.ok) {
-        context.commit("removeFriend", friendId);
-      } else {
-        console.log(response.data.message);
-      }
-    });
+    context
+      .dispatch("user/getAccessToken", null, {
+        root: true,
+      })
+      .then((accessToken) => {
+        sendRequest(
+          address + "/api/v1/users/friends",
+          "DELETE",
+          {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + accessToken,
+          },
+          {
+            userId: userId,
+            friendId: friendId,
+          }
+        ).then((response) => {
+          if (response.status.ok) {
+            context.commit("removeFriend", friendId);
+          } else {
+            console.log(response.data.message);
+          }
+        });
+      })
+      .catch((e) => {
+        console.log(e);
+      });
   },
   removeIgnored(context, ignoredUserId) {
     let userId = context.getters["userId"];
-    let accessToken = context.getters["accessToken"];
-    sendRequest(
-      address + "/api/v1/users/ignored",
-      "DELETE",
-      {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + accessToken,
-      },
-      {
-        userId: userId,
-        friendId: ignoredUserId,
-      }
-    ).then((response) => {
-      if (response.status.ok) {
-        context.commit("removeIgnoredUser", ignoredUserId);
-      } else {
-        console.log(response.data.message);
-      }
-    });
+    context
+      .dispatch("user/getAccessToken", null, {
+        root: true,
+      })
+      .then((accessToken) => {
+        sendRequest(
+          address + "/api/v1/users/ignored",
+          "DELETE",
+          {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + accessToken,
+          },
+          {
+            userId: userId,
+            friendId: ignoredUserId,
+          }
+        ).then((response) => {
+          if (response.status.ok) {
+            context.commit("removeIgnoredUser", ignoredUserId);
+          } else {
+            console.log(response.data.message);
+          }
+        });
+      })
+      .catch((e) => {
+        console.log(e);
+      });
   },
   changePassword(context, data) {
     return new Promise((resolve, reject) => {
       let userId = context.getters["userId"];
       let username = context.getters["username"];
-      let accessToken = context.getters["accessToken"];
-      sendRequest(
-        address + "/api/v1/users/update/password",
-        "PUT",
-        {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + accessToken,
-        },
-        {
-          username,
-          userId,
-          oldPassword: data.password,
-          newPassword: data.newPassword,
-        }
-      ).then((response) => {
-        if (response.status.ok) {
-          context.commit("saveUserSession", response.data);
-          resolve();
-        } else {
-          reject(response.data.message);
-        }
-      });
+      context
+        .dispatch("user/getAccessToken", null, {
+          root: true,
+        })
+        .then((accessToken) => {
+          sendRequest(
+            address + "/api/v1/users/update/password",
+            "PUT",
+            {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + accessToken,
+            },
+            {
+              username,
+              userId,
+              oldPassword: data.password,
+              newPassword: data.newPassword,
+            }
+          ).then((response) => {
+            if (response.status.ok) {
+              context.commit("saveUserSession", response.data);
+              resolve();
+            } else {
+              reject(response.data.message);
+            }
+          });
+        })
+        .catch((e) => {
+          console.log(e);
+        });
     });
   },
   changeUsername(context, data) {
     return new Promise((resolve, reject) => {
       let userId = context.getters["userId"];
       let username = context.getters["username"];
-      let accessToken = context.getters["accessToken"];
-      sendRequest(
-        address + "/api/v1/users/update/username",
-        "PUT",
-        {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + accessToken,
-        },
-        {
-          username,
-          userId,
-          password: data.password,
-          newUsername: data.newUsername,
-        }
-      ).then((response) => {
-        if (response.status.ok) {
-          context.commit("updateUsername", data.newUsername);
-          resolve();
-        } else {
-          reject(response.data.message);
-        }
-      });
+
+      context
+        .dispatch("user/getAccessToken", null, {
+          root: true,
+        })
+        .then((accessToken) => {
+          sendRequest(
+            address + "/api/v1/users/update/username",
+            "PUT",
+            {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + accessToken,
+            },
+            {
+              username,
+              userId,
+              password: data.password,
+              newUsername: data.newUsername,
+            }
+          ).then((response) => {
+            if (response.status.ok) {
+              context.commit("updateUsername", data.newUsername);
+              resolve();
+            } else {
+              reject(response.data.message);
+            }
+          });
+        })
+        .catch((e) => {
+          console.log(e);
+        });
     });
+  },
+  changeProfilePicture(context, d) {
+    context
+      .dispatch("user/getAccessToken", null, {
+        root: true,
+      })
+      .then((accessToken) => {
+        sendRequest(
+          address + "/api/v1/users/update/profile-picture",
+          "POST",
+          {
+            Authorization: "Bearer " + accessToken,
+          },
+          d.formData
+        )
+          .then((response) => {
+            if (response.status.ok) {
+              context.commit("updateProfilePicture", response.data);
+            } else {
+              console.log("profile picture udpate failed");
+            }
+          })
+          .catch((e) => {
+            console.log(e);
+          });
+      })
+      .catch((e) => {
+        console.log(e);
+      });
   },
 };
 
+function decodeJwt(token) {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch (e) {
+    return null;
+  }
+}
+
+function assertAlive(decoded) {
+  const now = Date.now().valueOf() / 1000;
+  if (decoded === null) {
+    throw new Error(`token corrupted`);
+  }
+  if (typeof decoded.exp !== "undefined" && decoded.exp < now) {
+    throw new Error(`token expired: ${JSON.stringify(decoded)}`);
+  }
+  if (typeof decoded.nbf !== "undefined" && decoded.nbf > now) {
+    throw new Error(`token not yet valid: ${JSON.stringify(decoded)}`);
+  }
+
+  return false;
+}
+
 async function sendRequest(url, method, headers, body) {
+  // Do not convert FormData to JSON
+  if (!(body instanceof FormData)) {
+    body = JSON.stringify(body);
+  }
+
   let response = await fetch(url, {
     method,
     headers,
-    body: JSON.stringify(body),
+    body,
   });
 
   let output = {

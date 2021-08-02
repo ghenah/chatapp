@@ -1,7 +1,12 @@
 package httpserver
 
 import (
+	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/ghenah/chatapp/pkg/idatastore"
@@ -27,12 +32,18 @@ func userRegister(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	if err = reqData.Validate(); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(reqData.Password), 12)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	err = ds.CreateUser(reqData.Username, reqData.Email, string(hashedPassword))
+	defaultUserProfilePicture := "default.jpeg"
+
+	err = ds.CreateUser(reqData.Username, reqData.Email, string(hashedPassword), defaultUserProfilePicture)
 	if err != nil {
 		if err == idatastore.ErrorDuplicateEntry {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -61,7 +72,11 @@ func userAuthencticate(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	// Validate the user login details
+	if err = reqData.Validate(); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// Verify the user login details
 	userPassword, err := ds.GetUserPassword(reqData.Username)
 	if err != nil {
 		if err == idatastore.ErrorUserNotFound {
@@ -85,6 +100,19 @@ func userAuthencticate(c echo.Context) (err error) {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
 	}
+
+	// Generate a refresh token
+	refreshToken, err := generateRefreshToken(userInfo.ID, userInfo.Username)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	cookie := new(http.Cookie)
+	cookie.Name = "refreshToken"
+	cookie.Value = refreshToken
+	cookie.Path = "/refresh-token"
+	cookie.HttpOnly = true
+	c.SetCookie(cookie)
 
 	return writeResponse(c, ResponseAuthSuccess{
 		User:        userInfo,
@@ -162,6 +190,10 @@ func userFriendAdd(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	if err = reqData.Validate(); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	// A user cannot add themselves to the friends list.
 	if reqData.UserID == reqData.FriendID {
 		return writeResponse(c, ResponseSuccess{Success: true})
@@ -201,6 +233,10 @@ func userFriendRemove(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	if err = reqData.Validate(); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	// Make sure the UserID belongs to the authenticated user (the owner of
 	// the JWT)
 	u := c.Get("user").(*jwt.Token)
@@ -231,6 +267,10 @@ func userFriendRemove(c echo.Context) (err error) {
 func userIgnoredAdd(c echo.Context) (err error) {
 	reqData := &RequestAddUserToList{}
 	if err = c.Bind(reqData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err = reqData.Validate(); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -271,6 +311,10 @@ func userIgnoredRemove(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	if err = reqData.Validate(); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	// Make sure the UserID belongs to the authenticated user (the owner of
 	// the JWT)
 	u := c.Get("user").(*jwt.Token)
@@ -301,6 +345,10 @@ func userIgnoredRemove(c echo.Context) (err error) {
 func userUpdatePassword(c echo.Context) (err error) {
 	reqData := &RequestUserUpdatePassword{}
 	if err = c.Bind(reqData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err = reqData.Validate(); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -352,6 +400,10 @@ func userUpdatePassword(c echo.Context) (err error) {
 func userUpdateUsername(c echo.Context) (err error) {
 	reqData := &RequestUserUpdateUsername{}
 	if err = c.Bind(reqData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err = reqData.Validate(); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -442,6 +494,103 @@ func chatGetWSTicket(c echo.Context) (err error) {
 	})
 }
 
+// refreshAccessToken
+// @Summary Refresh the access token.
+// @Description Refresh the access token using the refresh token from the
+// @Description Http-Only cookie.
+// @Tags refresh-token
+// @Produce json
+// @Success 200 {object} ResponseATRefreshSuccess
+// @Failure 500
+// @Router /refresh-token [get]
+func refreshAccessToken(c echo.Context) (err error) {
+	// Take the user details out of the access token
+	// u := c.Get("user").(*jwt.Token)
+	// claims := u.Claims.(*Claims)
+
+	// Generate a new access token
+	userInfo, err := ds.GetUser("Jack")
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+	accessToken, err := generateUserSession(userInfo.ID, userInfo.Username)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	// Generate a new refresh token as well
+	refreshToken, err := generateRefreshToken(userInfo.ID, userInfo.Username)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	cookie := new(http.Cookie)
+	cookie.Name = "refreshToken"
+	cookie.Value = refreshToken
+	cookie.Path = "/refresh-token"
+	cookie.HttpOnly = true
+	c.SetCookie(cookie)
+
+	return writeResponse(c, ResponseATRefreshSuccess{
+		AccessToken: accessToken,
+	})
+}
+
+func userProfileImageUpload(c echo.Context) error {
+	// Get the user info from the access token.
+	u := c.Get("user").(*jwt.Token)
+	claims := u.Claims.(*Claims)
+
+	profilePic, err := c.FormFile("profilePic")
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	src, err := profilePic.Open()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+	defer src.Close()
+
+	imageExtension, err := getImageExtension(&src)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	// Generate the image name
+	profilePicsDir := "images/profile/"
+	newPictureName := fmt.Sprintf("%d-%d.%s", claims.UserID, time.Now().UnixNano(), imageExtension)
+	path := profilePicsDir + newPictureName
+
+	dst, err := os.Create(path)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+	defer dst.Close()
+
+	if _, err = io.Copy(dst, src); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	// Swap the old picture for the new one
+	userInfo, err := ds.GetUser(claims.Username)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+
+	ds.UpdateProfilePicture(claims.UserID, newPictureName)
+	if userInfo.Picture != "default.jpeg" {
+		err = os.Remove(profilePicsDir + userInfo.Picture)
+		if err != nil {
+			fmt.Println("remove old profile picture:" + err.Error())
+		}
+	}
+
+	return writeResponse(c, struct {
+		PictureName string `json:"pictureName"`
+	}{PictureName: newPictureName})
+}
+
 // chatConnectionInit performs the necessary chat initialization steps
 // when a user upgrades their connection to WebSocket.
 func chatConnectionInit(c echo.Context) (err error) {
@@ -449,12 +598,41 @@ func chatConnectionInit(c echo.Context) (err error) {
 	ticket := c.Get("ticket").(*jwt.Token)
 	claims := ticket.Claims.(*Claims)
 
-	err = serveConnection(c.Response(), c.Request(), ca.InMsgQueue, claims.UserID, claims.Username)
+	userInfo, err := ds.GetUser(claims.Username)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+	}
+
+	err = serveConnection(c.Response(), c.Request(), ca.InMsgQueue, claims.UserID, claims.Username, userInfo.Picture)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
 	return nil
+}
+
+// getImageExtension provides the file extension based on the MIME type.
+// Currently, the supported MIME types are image/jpeg, image/png, and
+// image/gif. Returns a file extension and an error
+func getImageExtension(file *multipart.File) (string, error) {
+	fileHeader := make([]byte, 512)
+	if _, err := (*file).Read(fileHeader); err != nil {
+		return "", nil
+	}
+	if _, err := (*file).Seek(0, 0); err != nil {
+		return "", nil
+	}
+
+	MIMEType := http.DetectContentType(fileHeader)
+	MIMETypes := map[string]string{"image/jpeg": "jpeg", "image/png": "png", "image/gif": "gif"}
+	for t, ext := range MIMETypes {
+		if MIMEType == t {
+			return ext, nil
+		}
+	}
+
+	// extension was not found
+	return "", nil
 }
 
 // writeResponse writes the response in the format specified in the

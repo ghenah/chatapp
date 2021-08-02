@@ -5,6 +5,7 @@ import "time"
 type User struct {
 	ID          uint        `json:"id"`
 	Username    string      `json:"username"`
+	Picture     string      `json:"picture"`
 	Email       string      `json:"email"`
 	FriendsList []UserShort `json:"friendsList"`
 	IgnoreList  []UserShort `json:"ignoreList"`

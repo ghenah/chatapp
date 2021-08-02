@@ -8,6 +8,7 @@ import (
 type ChatAppConfig struct {
 	ClientSessionsList ichatappds.ClientSessionsList
 	ChatRoomsList      ichatappds.ChatRoomsList
+	ProfilePictures    ichatappds.ProfilePictures
 	UsersDS            idatastore.IDataStore
 }
 
@@ -30,11 +31,17 @@ func Init(cfg *ChatAppConfig) (*ChatApp, error) {
 			userActiveRoomsList: make(map[uint][]uint),
 		}
 	}
+	if cfg.ProfilePictures == nil {
+		cfg.ProfilePictures = &ProfilePictures{
+			pictures: make(map[uint]string),
+		}
+	}
 
 	chatApp := &ChatApp{
 		InMsgQueue:         make(chan ichatappds.ChatMessage),
 		clientSessionsList: cfg.ClientSessionsList,
 		chatRoomsList:      cfg.ChatRoomsList,
+		profilePictures:    cfg.ProfilePictures,
 	}
 	go chatApp.Start()
 

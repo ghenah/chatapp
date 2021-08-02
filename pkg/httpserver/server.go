@@ -16,15 +16,16 @@ import (
 )
 
 type ServerConfig struct {
-	AppAddressHostname    string
-	AppAddressPort        string
-	AppWsOriginSchema     string
-	AppWsOriginDomain     string
-	AppWsOriginPort       string
-	JWTSecretKey          string
-	JWTWebSocketSecretKey string
-	DS                    idatastore.IDataStore
-	ChatApp               *chatapp.ChatApp
+	AppAddressHostname       string
+	AppAddressPort           string
+	AppWsOriginSchema        string
+	AppWsOriginDomain        string
+	AppWsOriginPort          string
+	JWTSecretKey             string
+	JWTRefreshTokenSecretKey string
+	JWTWebSocketSecretKey    string
+	DS                       idatastore.IDataStore
+	ChatApp                  *chatapp.ChatApp
 }
 
 var e *echo.Echo
@@ -39,6 +40,8 @@ func StartServer(cfg ServerConfig) {
 		log.Fatal("no value for JWTSecretKey found in the environment")
 	} else if cfg.JWTWebSocketSecretKey == "" {
 		log.Fatal("no value for JWTWebSocketSecretKey found in the environment")
+	} else if cfg.JWTRefreshTokenSecretKey == "" {
+		log.Fatal("no value for JWTRefreshTokenSecretKey found in the environment")
 	}
 
 	upgrader = websocket.Upgrader{
@@ -63,6 +66,15 @@ func StartServer(cfg ServerConfig) {
 }
 
 func setUpRouter() {
+	refreshToken := e.Group("/refresh-token")
+	refreshToken.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		Claims:      &Claims{},
+		SigningKey:  []byte(getRefreshTokenSecret()),
+		TokenLookup: "cookie:refreshToken",
+		ContextKey:  "refreshToken",
+	}))
+	refreshToken.GET("", refreshAccessToken)
+
 	auth := e.Group("/auth")
 
 	auth.POST("/signup", userRegister)
@@ -87,6 +99,7 @@ func setUpRouter() {
 	protected.GET("/users/profile", getAuthenticatedUserInfo)
 	protected.PUT("/users/update/password", userUpdatePassword)
 	protected.PUT("/users/update/username", userUpdateUsername)
+	protected.POST("/users/update/profile-picture", userProfileImageUpload)
 
 	// chat
 	protected.GET("/chat/ticket", chatGetWSTicket)
@@ -103,4 +116,6 @@ func setUpRouter() {
 	wsProtected.GET("/connect", chatConnectionInit)
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
+
+	e.Static("/images/profile", "images/profile")
 }

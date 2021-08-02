@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/ghenah/chatapp/pkg/ichatappds"
+	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/gorilla/websocket"
 )
 
@@ -53,6 +55,15 @@ type mdInviteUser struct {
 	InviteeUsername string `json:"inviteeUsername"`
 	RoomID          uint   `json:"roomId"`
 }
+
+func (req mdInviteUser) Validate() error {
+	return validation.ValidateStruct(&req,
+		validation.Field(&req.InviteeID, validation.Required),
+		validation.Field(&req.InviteeUsername, validation.Required, validation.Match(regexp.MustCompile("^[A-Za-z]{1}[A-Za-z0-9]{1,15}$"))),
+		validation.Field(&req.RoomID, validation.Required),
+	)
+}
+
 type mdStartPersonalChat struct {
 	InviteeID       uint   `json:"inviteeId"`
 	InviteeUsername string `json:"inviteeUsername"`
@@ -158,6 +169,12 @@ func (h *WSConnectionHandler) read() {
 
 				continue
 			}
+			if err = data.Validate(); err != nil {
+				fmt.Println("inviteUser.Data: ", err.Error())
+				h.conn.Close()
+
+				continue
+			}
 
 			go ca.InviteUser(h.userID, data.InviteeID, data.RoomID, h.username, data.InviteeUsername)
 		case "acceptInvitation":
@@ -257,7 +274,7 @@ func (h *WSConnectionHandler) write() {
 	}
 }
 
-func serveConnection(w http.ResponseWriter, r *http.Request, in chan ichatappds.ChatMessage, userID uint, username string) error {
+func serveConnection(w http.ResponseWriter, r *http.Request, in chan ichatappds.ChatMessage, userID uint, username, picture string) error {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -266,7 +283,7 @@ func serveConnection(w http.ResponseWriter, r *http.Request, in chan ichatappds.
 
 	outCh := make(chan interface{}, 64)
 
-	sessionID, err := ca.RegisterClientSession(userID, username, outCh)
+	sessionID, err := ca.RegisterClientSession(userID, username, picture, outCh)
 	if err != nil {
 		fmt.Println(err.Error())
 		return err

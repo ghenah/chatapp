@@ -5,6 +5,9 @@ export default {
   username(state) {
     return state.username;
   },
+  profilePicture(state) {
+    return state.profilePicture;
+  },
   email(state) {
     return state.email;
   },

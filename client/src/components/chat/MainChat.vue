@@ -21,7 +21,9 @@
           <li v-for="room in rooms" :key="room.id">
             <div @click="onChatRoomSelected(room.id)" @contextmenu.prevent="onChatRoomCM($event, room.id, room.name)" :class="{'room-name-active': room.id === activeRoomId}" class="room-name">{{room.name}}</div>
             <ul v-if="room.id === activeRoomId">
-              <li v-for="username, userId in room.activeUsers" :key="userId" class="users-list-item">{{username}}</li>
+              <li v-for="username, userId in room.activeUsers" :key="userId" class="users-list-item">
+                <img :src="profilePics.get(userId)" alt="Profile picture" class="profile-pic-micro">
+                {{username}}</li>
             </ul>
           </li>
         </ul>
@@ -156,6 +158,9 @@ export default {
     },
     messages() {
       return this.$store.getters["chat/messagesLog"]
+    },
+    profilePics() {
+      return this.$store.getters["chat/userProfilePics"];
     },
     activeRoomId() {
       return this.$store.getters["chat/activeRoomId"];
@@ -360,5 +365,10 @@ ul {
   border-width: 0px;
   background: #ff3333;
   color: white;
+}
+.profile-pic-micro {
+  height: 50px;
+  width: 50px;
+  border-radius: 25px;
 }
 </style>

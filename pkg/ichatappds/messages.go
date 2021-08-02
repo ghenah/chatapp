@@ -22,6 +22,7 @@ type NotificationNewRoom struct {
 	Name        string          `json:"name"`
 	Visibility  uint            `json:"visibility"`
 	ActiveUsers map[uint]string `json:"activeUsers"`
+	ProfilePics map[uint]string `json:"profilePics"`
 }
 
 type NotificationUserJoinedRoom struct {
@@ -29,6 +30,7 @@ type NotificationUserJoinedRoom struct {
 	RoomID   uint   `json:"roomId"`
 	UserID   uint   `json:"userId"`
 	Username string `json:"username"`
+	Picture  string `json:"picture"`
 }
 
 type NotificationUserLeftRoom struct {
@@ -52,8 +54,9 @@ type NotificationRoomInvitation struct {
 }
 
 type UpdateUserRoomsInfo struct {
-	Type      uint8      `json:"type"`
-	RoomsList []ChatRoom `json:"roomsList"`
+	Type        uint8           `json:"type"`
+	RoomsList   []ChatRoom      `json:"roomsList"`
+	ProfilePics map[uint]string `json:"profilePics"`
 }
 
 const (

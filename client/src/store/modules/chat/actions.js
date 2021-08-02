@@ -6,18 +6,26 @@ var address = schema + domain + ":" + port;
 export default {
   getTicket(context) {
     return new Promise((resolve, reject) => {
-      let accessToken = context.rootGetters["user/accessToken"];
-      sendRequest(address + "/api/v1/chat/ticket", "GET", {
-        Authorization: "Bearer " + accessToken,
-      }).then((response) => {
-        if (response.status.ok) {
-          context.commit("saveTicket", response.data.wsTicket);
+      context
+        .dispatch("user/getAccessToken", null, {
+          root: true,
+        })
+        .then((accessToken) => {
+          sendRequest(address + "/api/v1/chat/ticket", "GET", {
+            Authorization: "Bearer " + accessToken,
+          }).then((response) => {
+            if (response.status.ok) {
+              context.commit("saveTicket", response.data.wsTicket);
 
-          resolve();
-        } else {
-          reject(response.data.message);
-        }
-      });
+              resolve();
+            } else {
+              reject(response.data.message);
+            }
+          });
+        })
+        .catch((e) => {
+          console.log(e);
+        });
     });
   },
   openWS(context) {
@@ -43,20 +51,28 @@ export default {
     wsConn.send(JSON.stringify(payload));
   },
   searchChatRooms(context) {
-    let accessToken = context.rootGetters["user/accessToken"];
-    sendRequest(address + "/api/v1/chat/rooms/search", "GET", {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + accessToken,
-    }).then((response) => {
-      if (response.status.ok) {
-        context.commit(
-          "saveChatRoomSearchResults",
-          response.data.chatRoomsList
-        );
-      } else {
-        console.log(response.data.message);
-      }
-    });
+    context
+      .dispatch("user/getAccessToken", null, {
+        root: true,
+      })
+      .then((accessToken) => {
+        sendRequest(address + "/api/v1/chat/rooms/search", "GET", {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + accessToken,
+        }).then((response) => {
+          if (response.status.ok) {
+            context.commit(
+              "saveChatRoomSearchResults",
+              response.data.chatRoomsList
+            );
+          } else {
+            console.log(response.data.message);
+          }
+        });
+      })
+      .catch((e) => {
+        console.log(e);
+      });
   },
   newRoom(context, d) {
     let wsConn = context.getters["wsConn"];
@@ -71,6 +87,13 @@ export default {
   },
   deleteRoom(context, d) {
     context.commit("deleteRoom", d.roomId);
+  },
+  updateUserProfilePics(context, profilePics) {
+    context.commit("updateUserProfilePics", profilePics);
+    context.commit("updateUserProfilePicture", {
+      userId: context.rootGetters["user/userId"],
+      picture: context.rootGetters["user/profilePicture"],
+    });
   },
   updateUserRoomsInfo(context, roomsList) {
     context.commit(
@@ -95,6 +118,16 @@ export default {
     }
 
     context.commit("addNewMessage", d);
+    if (Notification.permission === "granted") {
+      let n = new Notification(d.authorUsername, {
+        body: d.content,
+        requireInteraction: true,
+      });
+      n.onclick = function() {
+        context.commit("setActiveChatRoom", d.roomId);
+        window.parent.parent.focus();
+      };
+    }
   },
   setActiveChatRoom(context, data) {
     context.commit("setActiveChatRoom", data.roomId);
@@ -116,10 +149,13 @@ export default {
     wsConn.send(JSON.stringify(payload));
   },
   addUserToChat(context, d) {
+    context.commit("updateUserProfilePicture", {
+      userId: d.userId,
+      picture: d.picture,
+    });
     context.commit("addUserToChat", d);
     let ignoreList = context.rootGetters["user/ignoreList"];
     for (const e of ignoreList) {
-      console.dir(e);
       if (e.id === d.userId) {
         return;
       }
