@@ -45,3 +45,11 @@ APP_WS_ORIGIN_SCHEMA=http://
 APP_WS_ORIGIN_DOMAIN=localhost
 APP_WS_ORIGIN_PORT=8010
 ```
+
+### 2. **Initialization**
+
+Run docker compose from the project's root directory:
+
+```
+docker-compose up --build
+```

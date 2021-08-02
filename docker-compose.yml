@@ -9,7 +9,7 @@ services:
       - MYSQL_PASSWORD=${MYSQL_DB_PASSWORD}
   go:
     build: .
-    command: ["./wait-for", "mysql:3306", "--", "./bin/chatapp"]
+    command: ["./wait-for", "mysql:3306", "-t 5000", "--", "./bin/chatapp"]
     depends_on:
       - mysql
   nginx:

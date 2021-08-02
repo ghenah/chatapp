@@ -26,7 +26,7 @@ func main() {
 	// Set up a database connection
 	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s%s",
 		os.Getenv("MYSQL_DB_USER"),
-		os.Getenv("MYSQL_DB_PASSWD"),
+		os.Getenv("MYSQL_DB_PASSWORD"),
 		os.Getenv("MYSQL_DB_HOST"),
 		os.Getenv("MYSQL_DB_DATABASE"),
 		os.Getenv("MYSQL_DB_DATABASE_SETTINGS"),
