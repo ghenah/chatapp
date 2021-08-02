@@ -118,6 +118,16 @@ export default {
     }
 
     context.commit("addNewMessage", d);
+    if (Notification.permission === "granted") {
+      let n = new Notification(d.authorUsername, {
+        body: d.content,
+        requireInteraction: true,
+      });
+      n.onclick = function() {
+        context.commit("setActiveChatRoom", d.roomId);
+        window.parent.parent.focus();
+      };
+    }
   },
   setActiveChatRoom(context, data) {
     context.commit("setActiveChatRoom", data.roomId);
