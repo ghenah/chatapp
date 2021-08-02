@@ -1,4 +1,4 @@
-# chatapp - v0.3.0
+# chatapp - v0.4.0
 
 ## **Installation**
 
